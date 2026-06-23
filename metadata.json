@@ -1,0 +1,8 @@
+{
+  "name": "Fixdit",
+  "description": "A Reddit-inspired civic platform for reporting, verifying, and tracking local infrastructure issues using Gemini AI.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
