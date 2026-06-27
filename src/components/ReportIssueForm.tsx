@@ -25,6 +25,7 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
   const [severity, setSeverity] = useState<SeverityType>('medium');
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [locationPermissionError, setLocationPermissionError] = useState<string | null>(null);
   
   // Image & Gemini state
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -39,6 +40,33 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
   const [dragActive, setDragActive] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const captureCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationPermissionError('Browser location is unavailable. Please enable geolocation for accurate map pins.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLatitude(coords.latitude);
+        setLongitude(coords.longitude);
+        setLocationPermissionError(null);
+      },
+      () => {
+        setLocationPermissionError('Location access was denied. The map pin may be less accurate until location is enabled.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      }
+    );
+  };
+
+  React.useEffect(() => {
+    captureCurrentLocation();
+  }, []);
 
   // Convert File to Base64
   const fileToBase64 = (file: File): Promise<string> => {
@@ -76,23 +104,12 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
     setAnalyzing(true);
     setAnalysisResult(null);
     try {
-      // Pick random location in San Francisco for seeding
-      const randomLat = 37.75 + Math.random() * 0.05;
-      const randomLng = -122.45 + Math.random() * 0.06;
-      setLatitude(randomLat);
-      setLongitude(randomLng);
+      if (latitude === undefined || longitude === undefined) {
+        captureCurrentLocation();
+      }
 
-      // Try reverse geocoding approximation for SF
-      const simulatedAddresses = [
-        "240 Guerrero St, San Francisco, CA 94103",
-        "850 Bryant St, San Francisco, CA 94103",
-        "1201 Mason St, San Francisco, CA 94108",
-        "100 Otis St, San Francisco, CA 94103",
-        "300 McAllister St, San Francisco, CA 94102",
-        "400 Castro St, San Francisco, CA 94114"
-      ];
-      const randomAddr = simulatedAddresses[Math.floor(Math.random() * simulatedAddresses.length)];
-      setLocation(randomAddr);
+      const analysisLat = latitude;
+      const analysisLng = longitude;
 
       const response = await fetch('/api/issues/analyze', {
         method: 'POST',
@@ -103,8 +120,8 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
         body: JSON.stringify({
           imageBase64: base64Data,
           mimeType: mime,
-          lat: randomLat,
-          lng: randomLng,
+          lat: analysisLat,
+          lng: analysisLng,
           description: description || "New report submission"
         }),
       });
@@ -169,6 +186,10 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
       setError('Please provide the physical location or intersection.');
       return;
     }
+    if (latitude === undefined || longitude === undefined) {
+      setError('We could not determine your current coordinates. Please allow location access and try again.');
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -179,8 +200,8 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
         description: description.trim() || 'No detailed description provided.',
         category,
         severity,
-        latitude: latitude || 37.7749,
-        longitude: longitude || -122.4194,
+        latitude,
+        longitude,
         image: selectedImage || 'https://images.unsplash.com/photo-1584467541268-b029fb34de4e?w=600&auto=format&fit=crop&q=60',
         location: location.trim(),
         aiSummary: aiSummary,
@@ -232,6 +253,13 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold flex items-start gap-2 animate-shake">
             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {locationPermissionError && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-semibold flex items-start gap-2">
+            <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{locationPermissionError}</span>
           </div>
         )}
 

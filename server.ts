@@ -10,6 +10,10 @@ import connectDB from "./backend/config/db.cjs";
 import authRoutes from "./backend/routes/authRoutes.cjs";
 // @ts-ignore
 import postRoutes from "./backend/routes/postRoutes.cjs";
+// @ts-ignore
+import Post from "./backend/models/Post.cjs";
+// @ts-ignore
+import { protect } from "./backend/middleware/authMiddleware.cjs";
 
 // Load environment variables
 dotenv.config();
@@ -39,135 +43,70 @@ if (hasApiKey) {
   });
 }
 
-// Memory Database
-let issues: IssuePost[] = [
-  {
-    id: "seed-1",
-    title: "Massive active water pipe burst",
-    description: "Major water main leakage on the corner of Jefferson St. Water is spilling onto the pedestrian crossing, posing a slip hazard and wasting thousands of gallons of clean city water.",
-    category: "Water & Leakages",
-    severity: "critical",
-    status: "in_progress",
-    latitude: 37.8080,
-    longitude: -122.4177,
-    imageUrl: "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=600&auto=format&fit=crop&q=60",
-    creator: "civic_mind_sf",
-    upvotes: 56,
-    upvoters: ["user1", "user2"],
-    commentsCount: 4,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    priorityScore: 3 * 25 + 56 * 10 + 4 * 5, // high base priority
-    location: "Jefferson St & Hyde St, San Francisco, CA",
-  },
-  {
-    id: "seed-2",
-    title: "Deep pothole in middle of Mission Street lane",
-    description: "Deep pothole on the inner lane of Mission St. Already saw two cars swerve dangerously to avoid it. If not patched soon, it will cause flat tires or a collision.",
-    category: "Roads & Potholes",
-    severity: "high",
-    status: "verified",
-    latitude: 37.7602,
-    longitude: -122.4184,
-    imageUrl: "https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=60",
-    creator: "pothole_warrior",
-    upvotes: 42,
-    upvoters: ["user3"],
-    commentsCount: 2,
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    priorityScore: 42 * 10 + 2 * 5,
-    location: "Mission Street & 16th St, San Francisco, CA",
-  },
-  {
-    id: "seed-3",
-    title: "Broken streetlight causing pitch black alley",
-    description: "Streetlight #SF-3802 is completely dead. This alleyway at night is completely dark and feels very unsafe. Needs immediate bulb replacement.",
-    category: "Lighting & Power",
-    severity: "medium",
-    status: "reported",
-    latitude: 37.7880,
-    longitude: -122.4075,
-    imageUrl: "https://images.unsplash.com/photo-1509024644558-2f56ce76c490?w=600&auto=format&fit=crop&q=60",
-    creator: "nightWALK_sf",
-    upvotes: 18,
-    upvoters: [],
-    commentsCount: 1,
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-    priorityScore: 18 * 10 + 1 * 5,
-    location: "Tenderloin Alleyway, San Francisco, CA",
-  },
-  {
-    id: "seed-4",
-    title: "Overflowing commercial garbage bins in public park",
-    description: "Someone dumped construction debris and old mattresses next to the park entrance garbage bins. It is attracting rodents and smells awful.",
-    category: "Garbage & Sanitation",
-    severity: "high",
-    status: "reported",
-    latitude: 37.7915,
-    longitude: -122.4012,
-    imageUrl: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=600&auto=format&fit=crop&q=60",
-    creator: "gogreen_alice",
-    upvotes: 28,
-    upvoters: ["user1"],
-    commentsCount: 3,
-    createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), // 18 hours ago
-    priorityScore: 28 * 10 + 3 * 5,
-    location: "South Park, San Francisco, CA",
-  },
-  {
-    id: "seed-5",
-    title: "Severely splintered wooden swing set",
-    description: "The main wooden frame of the swingset in GGP children's quarters is cracked and splintering. Kids are getting splinters and the frame feels unstable.",
-    category: "Parks & Infrastructure",
-    severity: "low",
-    status: "resolved",
-    latitude: 37.7694,
-    longitude: -122.4862,
-    imageUrl: "https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=600&auto=format&fit=crop&q=60",
-    creator: "city_parent_9",
-    upvotes: 12,
-    upvoters: [],
-    commentsCount: 2,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-    priorityScore: 12 * 10 + 2 * 5,
-    location: "Golden Gate Park Swing Section, San Francisco, CA",
-    resolutionProof: {
-      imageUrl: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600&auto=format&fit=crop&q=60",
-      notes: "The park crew visited site SF-GG-9, sanded down the wooden support posts, replaced the damaged swings with commercial heavy-duty polymer swings, and double-bolted the safety chains. Swing set is fully safe and open for playtime!",
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    }
-  }
-];
+const defaultIssueLocation = {
+  city: "San Francisco",
+  state: "CA",
+  country: "USA",
+};
 
-let comments: Comment[] = [
-  {
-    id: "c1",
-    issueId: "seed-1",
-    author: "supervisor_maritza",
-    content: "Thank you for reporting this! Our Public Utilities Commission water response team is dispatching a technician to find the isolation valve and stop the flow. Case ID #SF-PUC-91048.",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "c2",
-    issueId: "seed-1",
-    author: "citizen_jane",
-    content: "Drove past this today, the water has reached the next block. Be extremely careful if you are walking or biking near Fisherman's Wharf!",
-    createdAt: new Date(Date.now() - 2.5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "c3",
-    issueId: "seed-4",
-    author: "sf_clean_streets",
-    content: "Sanitation trucks should be active here on Tuesday, but this is a bulk dumping violation. I've logged an official complaint with SF 311.",
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "c4",
-    issueId: "seed-5",
-    author: "city_parent_9",
-    content: "Fast resolution! Thank you to the SF Recreation and Parks Department for responding so quickly.",
-    createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+function normalizeStatus(status: string | undefined): StatusType {
+  if (status === "verified" || status === "in_progress" || status === "resolved") {
+    return status;
   }
-];
+  return "reported";
+}
+
+function mapPostToIssue(post: any): IssuePost {
+  const coordinates = post.location?.coordinates?.coordinates || [0, 0];
+  const commentsCount = Array.isArray(post.comments) ? post.comments.length : post.stats?.comments || 0;
+  const upvotes = Number(post.upvotes ?? post.stats?.upvotes ?? 0);
+  const severity = (post.severity || "medium").toLowerCase() as SeverityType;
+
+  return {
+    id: String(post._id),
+    title: post.title,
+    description: post.description,
+    category: post.category,
+    severity,
+    status: normalizeStatus(post.status),
+    latitude: Number(coordinates[1] || 0),
+    longitude: Number(coordinates[0] || 0),
+    imageUrl: post.images?.[0]?.url || "",
+    image: post.images?.[0]?.url || "",
+    location: post.location?.address || "San Francisco, CA",
+    creator: post.author?.username || post.authorName || "anonymous_citizen",
+    upvotes,
+    upvoters: Array.isArray(post.upvoters) ? post.upvoters : [],
+    commentsCount,
+    createdAt: new Date(post.createdAt || Date.now()).toISOString(),
+    priorityScore: calculatePriority(severity, upvotes, commentsCount),
+    resolutionProof: post.resolutionProof
+      ? {
+          imageUrl: post.resolutionProof.imageUrl || "",
+          notes: post.resolutionProof.notes || "",
+          updatedAt: post.resolutionProof.updatedAt
+            ? new Date(post.resolutionProof.updatedAt).toISOString()
+            : undefined,
+        }
+      : undefined,
+    aiSummary: post.aiSummary || "",
+    suggestedDepartment: post.assignedDepartment || "",
+  };
+}
+
+function mapPostComments(post: any): Comment[] {
+  const postComments = Array.isArray(post.comments) ? post.comments : [];
+
+  return postComments
+    .map((comment: any, index: number) => ({
+      id: String(comment._id || `${post._id}-comment-${index}`),
+      issueId: String(post._id),
+      author: comment.authorName || comment.user?.username || "civic_member",
+      content: comment.text,
+      createdAt: new Date(comment.createdAt || Date.now()).toISOString(),
+    }))
+    .sort((a: Comment, b: Comment) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
 
 // Helper to calculate Priority Score based on Hackathon Algorithm
 function calculatePriority(severity: SeverityType, upvotes: number, commentsCount: number): number {
@@ -207,49 +146,51 @@ app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
 
 // 1. Get all issues (with filtering, searching, and sorting)
-app.get("/api/issues", (req, res) => {
-  const { category, status, search, sortBy } = req.query;
-  let filtered = [...issues];
+app.get("/api/issues", async (req, res) => {
+  try {
+    const { category, status, search, sortBy } = req.query;
+    let posts = await Post.find({});
+    let filtered = posts.map(mapPostToIssue);
 
-  if (category) {
-    filtered = filtered.filter((i) => i.category === category);
-  }
-  if (status) {
-    filtered = filtered.filter((i) => i.status === status);
-  }
-  if (search) {
-    const q = String(search).toLowerCase();
-    filtered = filtered.filter(
-      (i) => i.title.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)
-    );
-  }
+    if (category) {
+      filtered = filtered.filter((issue: IssuePost) => issue.category === category);
+    }
+    if (status) {
+      filtered = filtered.filter((issue: IssuePost) => issue.status === status);
+    }
+    if (search) {
+      const q = String(search).toLowerCase();
+      filtered = filtered.filter(
+        (issue: IssuePost) =>
+          issue.title.toLowerCase().includes(q) ||
+          issue.description.toLowerCase().includes(q) ||
+          issue.location.toLowerCase().includes(q)
+      );
+    }
 
-  // Calculate scores before sorting
-  filtered = filtered.map((issue) => {
-    const count = comments.filter((c) => c.issueId === issue.id).length;
-    return {
-      ...issue,
-      commentsCount: count,
-      priorityScore: calculatePriority(issue.severity, issue.upvotes, count),
-    };
-  });
+    if (sortBy === "priority") {
+      filtered.sort((a:IssuePost, b:IssuePost) => b.priorityScore - a.priorityScore);
+    } else if (sortBy === "most_upvoted") {
+      filtered.sort((a:IssuePost, b:IssuePost) => b.upvotes - a.upvotes);
+    } else if (sortBy === "recent") {
+      filtered.sort((a:IssuePost, b:IssuePost) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortBy === "severity") {
+        const severityRank: Record<SeverityType, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+  
+        filtered.sort((a: IssuePost, b: IssuePost) => {
+        const rankB = severityRank[b.severity as SeverityType] || 0;
+        const rankA = severityRank[a.severity as SeverityType] || 0;
+        return rankB - rankA;
+      });
+    } else {
+      filtered.sort((a: IssuePost, b:IssuePost) => b.priorityScore - a.priorityScore);
+    }
 
-  // Sort
-  if (sortBy === "priority") {
-    filtered.sort((a, b) => b.priorityScore - a.priorityScore);
-  } else if (sortBy === "most_upvoted") {
-    filtered.sort((a, b) => b.upvotes - a.upvotes);
-  } else if (sortBy === "recent") {
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  } else if (sortBy === "severity") {
-    const severityRank = { critical: 4, high: 3, medium: 2, low: 1 };
-    filtered.sort((a, b) => severityRank[b.severity] - severityRank[a.severity]);
-  } else {
-    // Default: Sort by priority desc
-    filtered.sort((a, b) => b.priorityScore - a.priorityScore);
+    res.json(filtered);
+  } catch (error: any) {
+    console.error("Issue feed query failed:", error);
+    res.status(500).json({ error: "Failed to load issues." });
   }
-
-  res.json(filtered);
 });
 
 // 2. Analyze uploaded issue image (real Gemini or robust high-fidelity fallback)
@@ -260,20 +201,29 @@ app.post("/api/issues/analyze", async (req, res) => {
     return res.status(400).json({ error: "No image content provided." });
   }
 
-  // Detect potential duplicates within 150 meters before calling Gemini
-  const nearbyIssuesInRadius = issues
-    .map((issue) => ({
-      ...issue,
-      distance: lat && lng ? calculateDistanceInMeters(lat, lng, issue.latitude, issue.longitude) : Infinity,
-    }))
-    .filter((issue) => issue.distance <= 150)
-    .sort((a, b) => a.distance - b.distance);
+  let duplicateWarning = null;
 
-  const duplicateWarning = nearbyIssuesInRadius.length > 0 ? {
-    isPotentialDuplicate: true,
-    matchingIssue: nearbyIssuesInRadius[0],
-    distanceMeters: Math.round(nearbyIssuesInRadius[0].distance),
-  } : null;
+  if (lat && lng) {
+    const posts = await Post.find({});
+    const nearbyIssuesInRadius = posts
+      .map((post: any) => {
+        const issue = mapPostToIssue(post);
+        return {
+          ...issue,
+          distance: calculateDistanceInMeters(Number(lat), Number(lng), issue.latitude, issue.longitude),
+        };
+      })
+      .filter((issue: IssuePost & { distance: number }) => issue.distance <= 150)
+      .sort((a: IssuePost & { distance: number }, b: IssuePost & { distance: number }) => a.distance - b.distance);
+
+    duplicateWarning = nearbyIssuesInRadius.length > 0
+      ? {
+          isPotentialDuplicate: true,
+          matchingIssue: nearbyIssuesInRadius[0],
+          distanceMeters: Math.round(nearbyIssuesInRadius[0].distance),
+        }
+      : null;
+  }
 
   try {
     if (hasApiKey && ai) {
@@ -448,176 +398,245 @@ ${userTextDesc}
 });
 
 // 3. Post a new issue
-app.post("/api/issues", (req, res) => {
-  const { title, description, category, severity, latitude, longitude, imageUrl, image, location, aiSummary, suggestedDepartment, creator, status } = req.body;
+app.post("/api/issues", protect, async (req: any, res) => {
+  try {
+    const { title, description, category, severity, latitude, longitude, imageUrl, image, location, aiSummary, suggestedDepartment, status } = req.body;
 
-  if (!title || !category || !severity) {
-    return res.status(400).json({ error: "Missing required issue parameters" });
+    if (!title || !category || !severity) {
+      return res.status(400).json({ error: "Missing required issue parameters" });
+    }
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ error: "Missing report coordinates. Please allow location access before submitting." });
+    }
+
+    const finalLat = Number(latitude);
+    const finalLng = Number(longitude);
+    const finalImage = image || imageUrl || "https://images.unsplash.com/photo-1584467541268-b029fb34de4e?w=600&auto=format&fit=crop&q=60";
+    const finalStatus = normalizeStatus(status);
+
+    const createdPost = await Post.create({
+      title,
+      description: description || "No detailed description provided.",
+      category,
+      severity: String(severity).toLowerCase(),
+      status: finalStatus,
+      location: {
+        address: location || "San Francisco, CA",
+        ...defaultIssueLocation,
+        coordinates: [finalLng, finalLat],
+      },
+      images: finalImage ? [{ url: finalImage }] : [],
+      aiSummary: aiSummary || "",
+      assignedDepartment: suggestedDepartment || "Department of Public Works",
+      author: req.user._id,
+      upvotes: 0,
+      upvoters: [],
+      comments: [],
+    });
+
+    const hydratedPost = await Post.findById(createdPost._id);
+    res.status(201).json(mapPostToIssue(hydratedPost || createdPost));
+  } catch (error: any) {
+    console.error("Issue creation failed:", error);
+    res.status(500).json({ error: "Could not save report to the database." });
   }
-
-  const finalLat = latitude !== undefined ? Number(latitude) : (37.7749 + (Math.random() - 0.5) * 0.05);
-  const finalLng = longitude !== undefined ? Number(longitude) : (-122.4194 + (Math.random() - 0.5) * 0.05);
-  const finalImage = image || imageUrl || "https://images.unsplash.com/photo-1584467541268-b029fb34de4e?w=600&auto=format&fit=crop&q=60";
-  const finalStatus = status || "Open";
-
-  const newIssue: IssuePost = {
-    id: "issue-" + Date.now(),
-    title,
-    description: description || "No detailed description provided.",
-    category,
-    severity: severity as SeverityType,
-    status: finalStatus,
-    latitude: finalLat,
-    longitude: finalLng,
-    imageUrl: finalImage,
-    image: finalImage,
-    location: location || "San Francisco, CA",
-    aiSummary: aiSummary || "",
-    suggestedDepartment: suggestedDepartment || "Department of Public Works",
-    creator: creator || "anonymous_citizen",
-    upvotes: 0,
-    upvoters: [],
-    commentsCount: 0,
-    createdAt: new Date().toISOString(),
-    priorityScore: calculatePriority(severity as SeverityType, 0, 0),
-  };
-
-  issues.unshift(newIssue);
-  res.status(201).json(newIssue);
 });
 
 // 4. Vote for an issue (Reddit style toggle upvote)
-app.post("/api/issues/:id/vote", (req, res) => {
-  const { id } = req.params;
-  const { userId } = req.body;
+app.post("/api/issues/:id/vote", protect, async (req: any, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
 
-  const user = userId || "tester_user";
-  const issue = issues.find((i) => i.id === id);
+    const username = req.user?.username || req.body.userId || "tester_user";
+    const upvoters = Array.isArray(post.upvoters) ? [...post.upvoters] : [];
+    const votedIndex = upvoters.indexOf(username);
 
-  if (!issue) {
-    return res.status(404).json({ error: "Issue not found" });
+    if (votedIndex > -1) {
+      upvoters.splice(votedIndex, 1);
+    } else {
+      upvoters.push(username);
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      {
+        upvoters,
+        upvotes: upvoters.length,
+        stats: {
+          ...(post.stats || {}),
+          upvotes: upvoters.length,
+          comments: Array.isArray(post.comments) ? post.comments.length : post.stats?.comments || 0,
+        },
+      },
+      { new: true }
+    );
+
+    const mappedIssue = mapPostToIssue(updatedPost || post);
+    res.json({
+      upvotes: mappedIssue.upvotes,
+      upvoters: mappedIssue.upvoters,
+      priorityScore: mappedIssue.priorityScore,
+    });
+  } catch (error: any) {
+    console.error("Issue vote failed:", error);
+    res.status(500).json({ error: "Could not update vote." });
   }
-
-  const votedIndex = issue.upvoters.indexOf(user);
-  if (votedIndex > -1) {
-    // Already upvoted, remove upvote
-    issue.upvoters.splice(votedIndex, 1);
-    issue.upvotes = Math.max(0, issue.upvotes - 1);
-  } else {
-    // Add upvote
-    issue.upvoters.push(user);
-    issue.upvotes += 1;
-  }
-
-  // Recalculate priority
-  issue.priorityScore = calculatePriority(issue.severity, issue.upvotes, issue.commentsCount);
-
-  res.json({ upvotes: issue.upvotes, upvoters: issue.upvoters, priorityScore: issue.priorityScore });
 });
 
 // 5. Get comments for an issue
-app.get("/api/issues/:id/comments", (req, res) => {
-  const { id } = req.params;
-  const filteredComments = comments
-    .filter((c) => c.issueId === id)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  res.json(filteredComments);
+app.get("/api/issues/:id/comments", async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
+
+    res.json(mapPostComments(post));
+  } catch (error: any) {
+    console.error("Issue comments lookup failed:", error);
+    res.status(500).json({ error: "Could not load comments." });
+  }
 });
 
 // 6. Post a comment
-app.post("/api/issues/:id/comments", (req, res) => {
-  const { id } = req.params;
-  const { author, content } = req.body;
+app.post("/api/issues/:id/comments", protect, async (req: any, res) => {
+  try {
+    const { content } = req.body;
+    if (!content) {
+      return res.status(400).json({ error: "Comment content cannot be empty" });
+    }
 
-  if (!content) {
-    return res.status(400).json({ error: "Comment content cannot be empty" });
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
+
+    const existingComments = (Array.isArray(post.comments) ? post.comments : []).map((comment: any) => ({
+      user: comment.user?._id || comment.user || undefined,
+      authorName: comment.authorName || comment.user?.username || "civic_member",
+      text: comment.text,
+      createdAt: comment.createdAt || new Date(),
+    }));
+
+    const nextComments = [
+      ...existingComments,
+      {
+        user: req.user._id,
+        authorName: req.user.username,
+        text: content,
+        createdAt: new Date(),
+      },
+    ];
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      {
+        comments: nextComments,
+        stats: {
+          ...(post.stats || {}),
+          upvotes: Array.isArray(post.upvoters) ? post.upvoters.length : post.upvotes || 0,
+          comments: nextComments.length,
+        },
+      },
+      { new: true }
+    );
+
+    const mappedComments = mapPostComments(updatedPost || post);
+    res.status(201).json(mappedComments[mappedComments.length - 1]);
+  } catch (error: any) {
+    console.error("Issue comment creation failed:", error);
+    res.status(500).json({ error: "Could not save comment." });
   }
-
-  const issue = issues.find((i) => i.id === id);
-  if (!issue) {
-    return res.status(404).json({ error: "Issue not found" });
-  }
-
-  const newComment: Comment = {
-    id: "comment-" + Date.now(),
-    issueId: id,
-    author: author || "civic_member",
-    content,
-    createdAt: new Date().toISOString(),
-  };
-
-  comments.push(newComment);
-
-  // Update comment counter and recalculate priority
-  issue.commentsCount = comments.filter((c) => c.issueId === id).length;
-  issue.priorityScore = calculatePriority(issue.severity, issue.upvotes, issue.commentsCount);
-
-  res.status(201).json(newComment);
 });
 
 // 7. Solve issue and post progress or verification status updates
-app.patch("/api/issues/:id/status", (req, res) => {
-  const { id } = req.params;
-  const { status, proofImage, proofNotes } = req.body;
+app.patch("/api/issues/:id/status", protect, async (req: any, res) => {
+  try {
+    const { status, proofImage, proofNotes } = req.body;
+    const post = await Post.findById(req.params.id);
 
-  const issue = issues.find((i) => i.id === id);
-  if (!issue) {
-    return res.status(404).json({ error: "Issue not found" });
-  }
+    if (!post) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
 
-  if (status) {
-    issue.status = status as StatusType;
-  }
+    const creatorId = String(post.author?._id || post.author || "");
+    const currentUserId = String(req.user?._id || "");
+    const isCreator = creatorId === currentUserId;
+    const isStaff = ["admin", "employee", "staff"].includes(req.user?.role);
 
-  if (status === "resolved") {
-    issue.resolutionProof = {
-      imageUrl: proofImage || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=600&auto=format&fit=crop&q=60",
-      notes: proofNotes || "Citizen-led maintenance verification confirmed. Handled in collaboration with City Infrastructure services.",
-      updatedAt: new Date().toISOString(),
+    if (!isCreator && !isStaff) {
+      return res.status(403).json({ error: "Not authorized to update this issue." });
+    }
+
+    const nextStatus = normalizeStatus(status);
+    const nextUpdate: any = {
+      status: nextStatus,
     };
+
+    if (nextStatus === "resolved") {
+      nextUpdate.resolutionProof = {
+        imageUrl: proofImage || "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=600&auto=format&fit=crop&q=60",
+        notes: proofNotes || "Citizen-led maintenance verification confirmed. Handled in collaboration with City Infrastructure services.",
+        updatedAt: new Date(),
+      };
+      nextUpdate.resolvedAt = new Date();
+    } else {
+      nextUpdate.resolutionProof = null;
+      nextUpdate.resolvedAt = null;
+    }
+
+    const updatedPost = await Post.findByIdAndUpdate(req.params.id, nextUpdate, { new: true });
+    res.json(mapPostToIssue(updatedPost || post));
+  } catch (error: any) {
+    console.error("Issue status update failed:", error);
+    res.status(500).json({ error: "Could not update issue status." });
   }
-
-  // Recalculate priority
-  issue.priorityScore = calculatePriority(issue.severity, issue.upvotes, issue.commentsCount);
-
-  res.json(issue);
 });
 
 // 8. Public Transparency Metrics Dashboard Endpoint (Task 9)
-app.get("/api/stats", (req, res) => {
-  const total = issues.length;
-  const resolved = issues.filter((i) => i.status === "resolved").length;
-  const inProgress = issues.filter((i) => i.status === "in_progress").length;
-  const critical = issues.filter((i) => i.severity === "critical" && i.status !== "resolved").length;
+app.get("/api/stats", async (req, res) => {
+  try {
+    const posts = await Post.find({});
+    const issues = posts.map(mapPostToIssue);
+    const total = issues.length;
+    const resolved = issues.filter((issue:IssuePost) => issue.status === "resolved").length;
+    const inProgress = issues.filter((issue:IssuePost) => issue.status === "in_progress").length;
+    const critical = issues.filter((issue:IssuePost) => issue.severity === "critical" && issue.status !== "resolved").length;
 
-  const categoryDistribution: { [key: string]: number } = {};
-  issues.forEach((i) => {
-    categoryDistribution[i.category] = (categoryDistribution[i.category] || 0) + 1;
-  });
-
-  // Average hours in resolving
-  const resolutionTimes = issues
-    .filter((i) => i.status === "resolved" && i.resolutionProof?.updatedAt)
-    .map((i) => {
-      const created = new Date(i.createdAt).getTime();
-      const resolvedAt = new Date(i.resolutionProof!.updatedAt!).getTime();
-      return (resolvedAt - created) / (1000 * 60 * 60); // hours
+    const categoryDistribution: { [key: string]: number } = {};
+    issues.forEach((issue:IssuePost) => {
+      categoryDistribution[issue.category] = (categoryDistribution[issue.category] || 0) + 1;
     });
 
-  const avgHours = resolutionTimes.length > 0
-    ? resolutionTimes.reduce((acc, current) => acc + current, 0) / resolutionTimes.length
-    : 16.5; // fallback seeded average hours (16.5h is amazing speed!)
+    const resolutionTimes = issues
+      .filter((issue:IssuePost) => issue.status === "resolved" && issue.resolutionProof?.updatedAt)
+      .map((issue:IssuePost) => {
+        const created = new Date(issue.createdAt).getTime();
+        const resolvedAt = new Date(issue.resolutionProof!.updatedAt!).getTime();
+        return (resolvedAt - created) / (1000 * 60 * 60);
+      });
 
-  const stats: CivicStats = {
-    totalIssues: total,
-    resolvedIssues: resolved,
-    inProgressIssues: inProgress,
-    criticalIssues: critical,
-    categoryDistribution,
-    resolutionTimeAverageHours: Math.round(avgHours * 10) / 10,
-  };
+    const avgHours = resolutionTimes.length > 0
+      ? resolutionTimes.reduce((acc:number, current:number) => acc + current, 0) / resolutionTimes.length
+      : 0;
 
-  res.json(stats);
+    const stats: CivicStats = {
+      totalIssues: total,
+      resolvedIssues: resolved,
+      inProgressIssues: inProgress,
+      criticalIssues: critical,
+      categoryDistribution,
+      resolutionTimeAverageHours: Math.round(avgHours * 10) / 10,
+    };
+
+    res.json(stats);
+  } catch (error: any) {
+    console.error("Stats query failed:", error);
+    res.status(500).json({ error: "Failed to load transparency metrics." });
+  }
 });
 
 app.get("/test-gemini", async (req, res) => {

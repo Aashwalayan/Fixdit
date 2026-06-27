@@ -40,10 +40,17 @@ const locationSchema = new mongoose.Schema({
 }, { _id: false });
 
 const commentSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  authorName: { type: String, default: '' },
   text: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
+
+const resolutionProofSchema = new mongoose.Schema({
+  imageUrl: { type: String, default: '' },
+  notes: { type: String, default: '' },
+  updatedAt: { type: Date, default: Date.now }
+}, { _id: false });
 
 const postSchema = new mongoose.Schema(
   {
@@ -104,6 +111,10 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    upvoters: {
+      type: [String],
+      default: []
+    },
     downvotes: {
       type: Number,
       default: 0
@@ -123,6 +134,10 @@ const postSchema = new mongoose.Schema(
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      default: null
+    },
+    resolutionProof: {
+      type: resolutionProofSchema,
       default: null
     },
     resolvedAt: {
@@ -239,11 +254,13 @@ const Post = {
         comments: data.stats?.comments || (data.comments ? data.comments.length : 0)
       },
       upvotes: data.upvotes || data.stats?.upvotes || 0,
+      upvoters: data.upvoters || [],
       downvotes: data.downvotes || data.stats?.downvotes || 0,
       comments: data.comments || [],
       isAnonymous: data.isAnonymous || false,
       viewCount: data.viewCount || 0,
       verifiedBy: data.verifiedBy || null,
+      resolutionProof: data.resolutionProof || null,
       resolvedAt: data.resolvedAt || null,
       deletedAt: null,
       createdAt: new Date(),
