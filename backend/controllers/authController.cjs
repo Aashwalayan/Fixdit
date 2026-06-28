@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User.cjs');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.cjs';
 import mailer from '../config/mailer.js';
 
 // Helper to generate JWT token
@@ -15,7 +15,7 @@ const generateToken = (userId) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-const registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -53,6 +53,7 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Call function safely from the imported object
     const otp = await mailer.sendVerificationOTP(email.trim().toLowerCase());
 
     // Create and store user
@@ -66,7 +67,6 @@ const registerUser = async (req, res) => {
       verificationOTP: otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
-
 
     return res.status(201).json({
       message: 'Registration successful! Please check your email to verify your account.',  
@@ -89,7 +89,7 @@ const registerUser = async (req, res) => {
 // @desc    Login user (using username or email)
 // @route   POST /api/auth/login
 // @access  Public
-const loginUser = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -148,7 +148,7 @@ const loginUser = async (req, res) => {
 // @desc    Verify Email OTP
 // @route   POST /api/auth/verify-otp
 // @access  Public
-const verifyOTP = async (req, res) => {
+export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -199,7 +199,6 @@ const verifyOTP = async (req, res) => {
 
   } catch (error) {
     console.error(`Verify OTP error: ${error.message}`);
-
     return res.status(500).json({
       error: 'Server error during verification.',
     });
@@ -209,7 +208,7 @@ const verifyOTP = async (req, res) => {
 // @desc    Resend Email Verification OTP
 // @route   POST /api/auth/resend-otp
 // @access  Public
-const resendOTP = async (req, res) => {
+export const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -235,7 +234,7 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    const otp = await sendVerificationOTP(user.email);
+    const otp = await mailer.sendVerificationOTP(user.email);
 
     await User.findByIdAndUpdate(user._id, {
       verificationOTP: otp,
@@ -249,7 +248,6 @@ const resendOTP = async (req, res) => {
 
   } catch (error) {
     console.error(`Resend OTP error: ${error.message}`);
-
     return res.status(500).json({
       error: "Server error while resending OTP.",
     });
@@ -259,7 +257,7 @@ const resendOTP = async (req, res) => {
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Public
-const logoutUser = async (req, res) => {
+export const logoutUser = async (req, res) => {
   try {
     return res.status(200).json({
       success: true,
@@ -274,7 +272,7 @@ const logoutUser = async (req, res) => {
 // @desc    Get currently authenticated user info
 // @route   GET /api/auth/me
 // @access  Private
-const getMe = async (req, res) => {
+export const getMe = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authorized, profile retrieval failed.' });
@@ -297,13 +295,4 @@ const getMe = async (req, res) => {
     console.error(`GetMe profile error: ${error.message}`);
     return res.status(500).json({ error: 'Server error during profile retrieval.' });
   }
-};
-
-module.exports = {
-  registerUser,
-  loginUser,
-  verifyOTP,
-  resendOTP,
-  logoutUser,
-  getMe,
 };
