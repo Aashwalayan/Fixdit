@@ -3,14 +3,16 @@ import { Mail, CheckCircle2, ArrowRight, RefreshCw, Sparkles } from 'lucide-reac
 
 interface EmailVerificationProps {
   email: string;
+  initialOtp?: string;
   onBackToLogin: () => void;
 }
 
 export const EmailVerification: React.FC<EmailVerificationProps> = ({
   email,
+  initialOtp,
   onBackToLogin,
 }) => {
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(initialOtp || "");
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
@@ -100,8 +102,13 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             <div className="space-y-2">
               <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Check Your Inbox</h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                We've sent a 6-digit verification code to <strong className="text-slate-800">{email}</strong>. Enter the code below to verify your account.
-              </p>
+              We've sent a 6-digit verification code to <strong className="text-slate-800">{email}</strong>. Enter the code below to verify your account.
+            </p>
+            {initialOtp && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+                Email delivery is currently unavailable on this deployment, so the code has been prefilled for you.
+              </div>
+            )}
             </div>
 
             <div className="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-3">

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 
 interface SignUpProps {
-  onRegisterSuccess: (email: string) => void;
+  onRegisterSuccess: (email: string, verificationToken?: string) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -86,8 +86,8 @@ export const SignUp: React.FC<SignUpProps> = ({ onRegisterSuccess, onNavigateToL
 
       setSuccess('Account created successfully!');
       setTimeout(() => {
-        // Pass token to display verification simulator
-        onRegisterSuccess(email.trim());
+        // Pass code fallback so verification still works if email delivery is unavailable.
+        onRegisterSuccess(email.trim(), data.verificationToken);
       }, 1000);
 
     } catch (err: any) {

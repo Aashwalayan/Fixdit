@@ -73,12 +73,11 @@ export const registerUser = async (req, res) => {
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    void mailer.sendVerificationOTP(normalizedEmail, otp).catch((mailError) => {
-      console.error(`Verification email could not be sent for ${normalizedEmail}: ${mailError.message}`);
-    });
+    void mailer.sendVerificationOTP(normalizedEmail, otp);
 
     return res.status(201).json({
       message: 'Registration successful! Please check your email to verify your account.',  
+      verificationToken: otp,
       user: {
         id: user._id,
         username: user.username,
@@ -251,13 +250,12 @@ export const resendOTP = async (req, res) => {
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    void mailer.sendVerificationOTP(user.email, otp).catch((mailError) => {
-      console.error(`Resend OTP email failed for ${normalizedEmail}: ${mailError.message}`);
-    });
+    void mailer.sendVerificationOTP(user.email, otp);
 
     return res.status(200).json({
       success: true,
       message: "A new verification code has been sent to your email.",
+      verificationToken: otp,
     });
 
   } catch (error) {

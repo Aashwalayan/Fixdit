@@ -24,18 +24,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Log SMTP availability, but never let mail checks block app startup.
-transporter.verify()
-  .then(() => {
-    console.log("SMTP server is ready.");
-  })
-  .catch((error) => {
-    console.error("Email server error:", error);
-  });
-
 const sendVerificationOTP = async (email, otp = generateVerificationOTP()) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('Email service is not configured.');
+    return { otp, delivered: false };
   }
 
   try {
@@ -53,10 +44,10 @@ const sendVerificationOTP = async (email, otp = generateVerificationOTP()) => {
       `,
     });
 
-    return otp;
+    return { otp, delivered: true };
   } catch (error) {
     console.error("Error sending verification email:", error);
-    throw new Error("Failed to send verification email.");
+    return { otp, delivered: false };
   }
 };
 
