@@ -10,6 +10,7 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
+  family: 4,
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
@@ -23,13 +24,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email server error:", error);
-  } else {
+// Log SMTP availability, but never let mail checks block app startup.
+transporter.verify()
+  .then(() => {
     console.log("SMTP server is ready.");
-  }
-});
+  })
+  .catch((error) => {
+    console.error("Email server error:", error);
+  });
 
 const sendVerificationOTP = async (email, otp = generateVerificationOTP()) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
