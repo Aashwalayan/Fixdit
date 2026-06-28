@@ -24,7 +24,7 @@ transporter.verify((error, success) => {
   }
 });
 
-export const sendVerificationOTP = async (email) => {
+const sendVerificationOTP = async (email) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
@@ -48,3 +48,10 @@ export const sendVerificationOTP = async (email) => {
     throw new Error("Failed to send verification email.");
   }
 };
+
+
+const mailer = {
+  sendVerificationOTP
+};
+
+export default mailer;
