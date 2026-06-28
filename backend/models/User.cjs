@@ -68,21 +68,46 @@ const User = {
   MongooseModel: MongooseUser,
 
   findOne: async (query) => {
+    const normalizedQuery = {
+      ...query,
+    };
+
+    if (normalizedQuery.email) {
+      normalizedQuery.email = String(normalizedQuery.email).trim().toLowerCase();
+    }
+
+    if (normalizedQuery.username) {
+      normalizedQuery.username = String(normalizedQuery.username).trim();
+    }
+
+    if (Array.isArray(normalizedQuery.$or)) {
+      normalizedQuery.$or = normalizedQuery.$or.map((clause) => {
+        const normalizedClause = { ...clause };
+        if (normalizedClause.email) {
+          normalizedClause.email = String(normalizedClause.email).trim().toLowerCase();
+        }
+        if (normalizedClause.username) {
+          normalizedClause.username = String(normalizedClause.username).trim();
+        }
+        return normalizedClause;
+      });
+    }
+
     if (isMongoConnected()) {
       try {
-        return await MongooseUser.findOne(query);
+        return await MongooseUser.findOne(normalizedQuery);
       } catch (err) {
         console.error('Mongoose findOne error, falling back to memory:', err);
       }
     }
     
     return global.memoryUsers.find(u => {
-      if (query.email && u.email === query.email.toLowerCase()) return true;
-      if (query.username && u.username === query.username) return true;
-      if (query.verificationOTP && u.verificationOTP === query.verificationOTP) return true;
+      if (normalizedQuery.email && u.email === normalizedQuery.email) return true;
+      if (normalizedQuery.username && u.username === normalizedQuery.username) return true;
+      if (normalizedQuery.verificationOTP && u.verificationOTP === normalizedQuery.verificationOTP) return true;
       
-      if (query.$or && Array.isArray(query.$or)) {
-        return query.$or.some(q => {
+      if (normalizedQuery.$or && Array.isArray(normalizedQuery.$or)) {
+        return normalizedQuery.$or.some(q => {
           if (q.email && u.email === q.email.toLowerCase()) return true;
           if (q.username && u.username === q.username) return true;
           return false;
@@ -94,13 +119,13 @@ const User = {
 
   create: async (data) => {
     const userData = {
-      username: data.username,
-      email: data.email.toLowerCase(),
+      username: String(data.username || '').trim(),
+      email: String(data.email || '').trim().toLowerCase(),
       password: data.password,
       emailVerified: data.emailVerified !== undefined ? data.emailVerified : false,
       role: data.role || 'user',
       profilePicture: data.profilePicture || '',
-      verificationOTP: data.verificationOTP || '',
+      verificationOTP: data.verificationOTP || null,
       otpExpires: data.otpExpires || null,
       createdAt: new Date(),
       updatedAt: new Date(),

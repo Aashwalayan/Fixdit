@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 import nodemailer from 'nodemailer';
 
+const generateVerificationOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -24,8 +28,10 @@ transporter.verify((error, success) => {
   }
 });
 
-const sendVerificationOTP = async (email) => {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+const sendVerificationOTP = async (email, otp = generateVerificationOTP()) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email service is not configured.');
+  }
 
   try {
     await transporter.sendMail({

@@ -12,19 +12,25 @@ const generateToken = (userId) => {
   );
 };
 
+const generateVerificationOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    const normalizedUsername = username?.trim();
+    const normalizedEmail = email?.trim().toLowerCase();
 
     // Validate inputs
-    if (!username || !email || !password) {
+    if (!normalizedUsername || !normalizedEmail || !password) {
       return res.status(400).json({ error: 'Please provide all required fields: username, email, and password.' });
     }
 
-    if (username.trim().length < 3) {
+    if (normalizedUsername.length < 3) {
       return res.status(400).json({ error: 'Username must be at least 3 characters long.' });
     }
 
@@ -33,18 +39,18 @@ export const registerUser = async (req, res) => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
 
     // Ensure username is unique
-    const usernameExists = await User.findOne({ username });
+    const usernameExists = await User.findOne({ username: normalizedUsername });
     if (usernameExists) {
       return res.status(400).json({ error: 'Username is already taken.' });
     }
 
     // Ensure email is unique
-    const emailExists = await User.findOne({ email });
+    const emailExists = await User.findOne({ email: normalizedEmail });
     if (emailExists) {
       return res.status(400).json({ error: 'Email is already registered.' });
     }
@@ -53,20 +59,37 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Call function safely from the imported object
-    const otp = await mailer.sendVerificationOTP(email.trim().toLowerCase());
+    const otp = generateVerificationOTP();
 
     // Create and store user
     const user = await User.create({
-      username: username.trim(),
-      email: email.trim().toLowerCase(),
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
       emailVerified: false,
       role: 'user',
-      profilePicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`,
+      profilePicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedUsername)}`,
       verificationOTP: otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
+
+    try {
+      await mailer.sendVerificationOTP(normalizedEmail, otp);
+    } catch (mailError) {
+      console.error(`Verification email could not be sent for ${normalizedEmail}: ${mailError.message}`);
+      return res.status(201).json({
+        message: 'Account created, but the verification email could not be delivered. You can resend the code from the verification screen.',
+        warning: true,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          role: user.role,
+          profilePicture: user.profilePicture,
+        }
+      });
+    }
 
     return res.status(201).json({
       message: 'Registration successful! Please check your email to verify your account.',  
@@ -211,15 +234,16 @@ export const verifyOTP = async (req, res) => {
 export const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
-    if (!email) {
+    if (!normalizedEmail) {
       return res.status(400).json({
         error: "Email is required.",
       });
     }
 
     const user = await User.findOne({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (!user) {
@@ -234,12 +258,21 @@ export const resendOTP = async (req, res) => {
       });
     }
 
-    const otp = await mailer.sendVerificationOTP(user.email);
+    const otp = generateVerificationOTP();
 
     await User.findByIdAndUpdate(user._id, {
       verificationOTP: otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
+
+    try {
+      await mailer.sendVerificationOTP(user.email, otp);
+    } catch (mailError) {
+      console.error(`Resend OTP email failed for ${normalizedEmail}: ${mailError.message}`);
+      return res.status(503).json({
+        error: "Verification code was saved, but the email could not be delivered. Please try again shortly.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
