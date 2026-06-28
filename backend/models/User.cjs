@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+userSchema.index(
+  { otpExpires: 1 }, 
+  { 
+    expireAfterSeconds: 0, 
+    partialFilterExpression: { emailVerified: false } 
+  }
+);
+
 // Compile or retrieve the Mongoose model
 const MongooseUser = mongoose.models.User || mongoose.model('User', userSchema);
 
