@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const User = require('../models/User.cjs');
+const sendVerificationOTP = require('../config/mailer');
 
 // Helper to generate JWT token
 const generateToken = (userId) => {
@@ -53,8 +53,7 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Generate Verification Token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const otp = await sendVerificationOTP(email.trim().toLowerCase());
 
     // Create and store user
     const user = await User.create({
@@ -64,23 +63,13 @@ const registerUser = async (req, res) => {
       emailVerified: false,
       role: 'user',
       profilePicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`,
-      verificationToken,
+      verificationOTP: otp,
+      otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    // Send Simulated Email
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
-    console.log('\n========================================================================');
-    console.log('📧 SIMULATED FIXDIT EMAIL VERIFICATION');
-    console.log(`To: ${user.email}`);
-    console.log(`Subject: Verify Your Fixdit Civic Account`);
-    console.log(`Welcome, ${user.username}! Please verify your account by clicking the link below:`);
-    console.log(`👉 Verification Link: ${verificationUrl}`);
-    console.log('========================================================================\n');
 
     return res.status(201).json({
-      message: 'Registration successful! Please check your email to verify your account.',
-      verificationToken, 
-      verificationUrl,   
+      message: 'Registration successful! Please check your email to verify your account.',  
       user: {
         id: user._id,
         username: user.username,
@@ -131,9 +120,8 @@ const loginUser = async (req, res) => {
     // Reject unverified accounts
     if (!user.emailVerified) {
       return res.status(403).json({
-        error: 'Your email address is not verified. Please check your inbox or use the sandbox simulator to verify your account.',
+        error: 'Your email address is not verified. Please verify your email before logging in.',
         unverified: true,
-        verificationToken: user.verificationToken,
       });
     }
 
@@ -157,66 +145,114 @@ const loginUser = async (req, res) => {
   }
 };
 
-// @desc    Verify email address
-// @route   GET /api/auth/verify-email/:token
+// @desc    Verify Email OTP
+// @route   POST /api/auth/verify-otp
 // @access  Public
-const verifyEmail = async (req, res) => {
+const verifyOTP = async (req, res) => {
   try {
-    const { token } = req.params;
+    const { email, otp } = req.body;
 
-    if (!token) {
-      return res.status(400).json({ error: 'Invalid verification token.' });
+    if (!email || !otp) {
+      return res.status(400).json({
+        error: 'Email and OTP are required.',
+      });
     }
 
-    const user = await User.findOne({ verificationToken: token });
-
-    if (!user) {
-      return res.status(400).json({ error: 'Verification token is invalid or has expired.' });
-    }
-
-    // Update user to verified
-    await User.findByIdAndUpdate(user._id, {
-      emailVerified: true,
-      verificationToken: '', 
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
     });
 
-    const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
-    if (acceptsHtml) {
-      return res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Account Verified - Fixdit</title>
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-            .card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; max-width: 400px; width: 90%; border: 1px solid #e2e8f0; }
-            .icon { background: #dcfce7; color: #15803d; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 28px; font-weight: bold; }
-            h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem; color: #0f172a; }
-            p { font-size: 0.95rem; color: #64748b; line-height: 1.5; margin: 0 0 1.5rem; }
-            .btn { display: inline-block; background: #ea580c; color: white; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.15s; }
-            .btn:hover { background: #c2410c; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <div class="icon">✓</div>
-            <h1>Email Verified!</h1>
-            <p>Your Fixdit account has been successfully verified. You can now close this tab and log in to the application.</p>
-            <a href="/" class="btn">Go to Fixdit Portal</a>
-          </div>
-        </body>
-        </html>
-      `);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found.',
+      });
     }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        error: 'Email is already verified.',
+      });
+    }
+
+    if (user.verificationOTP !== otp) {
+      return res.status(400).json({
+        error: 'Invalid verification code.',
+      });
+    }
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      return res.status(400).json({
+        error: 'Verification code has expired.',
+      });
+    }
+
+    await User.findByIdAndUpdate(user._id, {
+      emailVerified: true,
+      verificationOTP: '',
+      otpExpires: null,
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Your email address has been verified successfully. You can now log in.'
+      message: 'Email verified successfully.',
     });
 
   } catch (error) {
-    console.error(`Verify email error: ${error.message}`);
-    return res.status(500).json({ error: 'Server error during email verification.' });
+    console.error(`Verify OTP error: ${error.message}`);
+
+    return res.status(500).json({
+      error: 'Server error during verification.',
+    });
+  }
+};
+
+// @desc    Resend Email Verification OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email is required.",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found.",
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        error: "This email has already been verified.",
+      });
+    }
+
+    const otp = await sendVerificationOTP(user.email);
+
+    await User.findByIdAndUpdate(user._id, {
+      verificationOTP: otp,
+      otpExpires: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "A new verification code has been sent to your email.",
+    });
+
+  } catch (error) {
+    console.error(`Resend OTP error: ${error.message}`);
+
+    return res.status(500).json({
+      error: "Server error while resending OTP.",
+    });
   }
 };
 
@@ -266,7 +302,8 @@ const getMe = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
-  verifyEmail,
+  verifyOTP,
+  resendOTP,
   logoutUser,
   getMe,
 };

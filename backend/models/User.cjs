@@ -31,9 +31,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    verificationToken: {
+    verificationOTP: {
       type: String,
-      default: '',
+      default: null,
+    },
+    otpExpires: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -67,7 +71,7 @@ const User = {
     return global.memoryUsers.find(u => {
       if (query.email && u.email === query.email.toLowerCase()) return true;
       if (query.username && u.username === query.username) return true;
-      if (query.verificationToken && u.verificationToken === query.verificationToken) return true;
+      if (query.verificationOTP && u.verificationOTP === query.verificationOTP) return true;
       
       if (query.$or && Array.isArray(query.$or)) {
         return query.$or.some(q => {
@@ -88,7 +92,8 @@ const User = {
       emailVerified: data.emailVerified !== undefined ? data.emailVerified : false,
       role: data.role || 'user',
       profilePicture: data.profilePicture || '',
-      verificationToken: data.verificationToken || '',
+      verificationOTP: data.verificationOTP || '',
+      otpExpires: data.otpExpires || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

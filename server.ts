@@ -44,9 +44,9 @@ if (hasApiKey) {
 }
 
 const defaultIssueLocation = {
-  city: "San Francisco",
-  state: "CA",
-  country: "USA",
+  city: "New Delhi",
+  state: "DL",
+  country: "India",
 };
 
 function normalizeStatus(status: string | undefined): StatusType {

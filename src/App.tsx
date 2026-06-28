@@ -212,8 +212,7 @@ export default function App() {
 
           {authView === 'signup' && (
             <SignUp
-              onRegisterSuccess={(verificationTok, email) => {
-                setVerificationToken(verificationTok);
+              onRegisterSuccess={(email) => {
                 setVerificationEmail(email);
                 setAuthView('verification');
               }}
@@ -223,7 +222,6 @@ export default function App() {
 
           {authView === 'verification' && (
             <EmailVerification
-              verificationToken={verificationToken}
               email={verificationEmail}
               onBackToLogin={() => setAuthView('login')}
             />
