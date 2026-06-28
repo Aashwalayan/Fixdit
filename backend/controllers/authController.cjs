@@ -73,23 +73,9 @@ export const registerUser = async (req, res) => {
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    try {
-      await mailer.sendVerificationOTP(normalizedEmail, otp);
-    } catch (mailError) {
+    void mailer.sendVerificationOTP(normalizedEmail, otp).catch((mailError) => {
       console.error(`Verification email could not be sent for ${normalizedEmail}: ${mailError.message}`);
-      return res.status(201).json({
-        message: 'Account created, but the verification email could not be delivered. You can resend the code from the verification screen.',
-        warning: true,
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          role: user.role,
-          profilePicture: user.profilePicture,
-        }
-      });
-    }
+    });
 
     return res.status(201).json({
       message: 'Registration successful! Please check your email to verify your account.',  
@@ -265,14 +251,9 @@ export const resendOTP = async (req, res) => {
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    try {
-      await mailer.sendVerificationOTP(user.email, otp);
-    } catch (mailError) {
+    void mailer.sendVerificationOTP(user.email, otp).catch((mailError) => {
       console.error(`Resend OTP email failed for ${normalizedEmail}: ${mailError.message}`);
-      return res.status(503).json({
-        error: "Verification code was saved, but the email could not be delivered. Please try again shortly.",
-      });
-    }
+    });
 
     return res.status(200).json({
       success: true,
