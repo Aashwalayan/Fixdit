@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.cjs');
-const sendVerificationOTP = require('../config/mailer');
+const sendVerificationOTP = require('../config/mailer.js');
 
 // Helper to generate JWT token
 const generateToken = (userId) => {

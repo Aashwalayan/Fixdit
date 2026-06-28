@@ -54,4 +54,4 @@ const sendVerificationOTP = async (email) => {
 
 };
 
-export default sendVerificationOTP;
+module.exports = sendVerificationOTP;
