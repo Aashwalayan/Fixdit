@@ -4,13 +4,13 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false, // Must be false for port 587
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Your 16-character Google App Password
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: false, // Prevents cloud hosting proxy networks from dropping handshakes
+    rejectUnauthorized: false,
     ciphers: 'SSLv3'
   }
 });
@@ -54,4 +54,4 @@ const sendVerificationOTP = async (email) => {
 
 };
 
-module.exports = sendVerificationOTP;
+export default sendVerificationOTP;
