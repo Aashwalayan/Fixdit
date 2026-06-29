@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, Key, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: (token: string, user: any) => void;
@@ -14,7 +14,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [unverifiedInfo, setUnverifiedInfo] = useState<{ token: string; email: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +24,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
 
     setLoading(true);
     setError(null);
-    setUnverifiedInfo(null);
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: emailOrUsername.trim(),
           password,
@@ -42,19 +38,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 403 && data.unverified) {
-          setUnverifiedInfo({
-            token: data.verificationToken,
-            email: emailOrUsername.trim(),
-          });
-          throw new Error(data.error || 'Your email address is not verified.');
-        }
         throw new Error(data.error || 'Invalid credentials provided.');
       }
 
       setSuccess('Logged in successfully!');
       setTimeout(() => {
-        // Persist token based on Remember Me
         if (rememberMe) {
           localStorage.setItem('fixdit_token', data.token);
         } else {
@@ -65,26 +53,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
 
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred during login.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Simulation handler for direct verification from the login alert
-  const handleSimulateVerification = async () => {
-    if (!unverifiedInfo) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/auth/verify-email/${unverifiedInfo.token}`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Verification failed.');
-      }
-      setSuccess('Account verified successfully! You can now log in.');
-      setUnverifiedInfo(null);
-    } catch (err: any) {
-      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -103,18 +71,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-150 rounded-xl text-red-700 text-sm flex items-start gap-2.5 animate-fadeIn">
           <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold">{error}</p>
-            {unverifiedInfo && (
-              <button
-                type="button"
-                onClick={handleSimulateVerification}
-                className="mt-2 text-xs font-bold text-red-800 hover:text-red-950 underline block transition"
-              >
-                ⚡ Sandbox Simulator: Verify this email instantly with 1-click
-              </button>
-            )}
-          </div>
+          <p className="font-semibold">{error}</p>
         </div>
       )}
 
@@ -153,7 +110,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigateToSignUp
             </label>
             <button
               type="button"
-              onClick={() => alert('Forgot Password simulator: In real deployment, this triggers a secure token-based password reset link sent to your registered email.')}
+              onClick={() => alert('Forgot Password: In production, this triggers a secure token-based password reset link sent to your registered email.')}
               className="text-[10px] text-orange-650 hover:text-orange-800 font-bold uppercase hover:underline transition"
             >
               Forgot Password?

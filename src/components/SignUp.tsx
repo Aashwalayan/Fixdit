@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 
 interface SignUpProps {
-  onRegisterSuccess: (email: string, verificationToken?: string) => void;
+  onRegisterSuccess: (email: string) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -41,11 +41,9 @@ export const SignUp: React.FC<SignUpProps> = ({ onRegisterSuccess, onNavigateToL
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Reset feedback
     setError(null);
     setSuccess(null);
 
-    // Validation checks
     if (!isUsernameValid) {
       setError('Username must be at least 3 characters long.');
       return;
@@ -68,9 +66,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onRegisterSuccess, onNavigateToL
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username.trim(),
           email: email.trim(),
@@ -81,14 +77,23 @@ export const SignUp: React.FC<SignUpProps> = ({ onRegisterSuccess, onNavigateToL
       const data = await response.json();
 
       if (!response.ok) {
+        // 503: user was created but email could not be delivered
+        if (response.status === 503 && data.emailFailed) {
+          setError(data.error);
+          // Still navigate to verification so they can use Resend OTP once the issue is fixed
+          if (data.userCreated && data.email) {
+            setTimeout(() => onRegisterSuccess(data.email), 2000);
+          }
+          return;
+        }
         throw new Error(data.error || 'Registration failed.');
       }
 
-      setSuccess('Account created successfully!');
+      setSuccess('Account created! Check your email for your verification code.');
       setTimeout(() => {
-        // Pass code fallback so verification still works if email delivery is unavailable.
-        onRegisterSuccess(email.trim(), data.verificationToken);
-      }, 1000);
+        // Pass only the email — no OTP, no shortcut token
+        onRegisterSuccess(email.trim());
+      }, 1500);
 
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');

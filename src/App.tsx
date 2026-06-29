@@ -22,7 +22,6 @@ export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'verification'>('login');
   const [verificationEmail, setVerificationEmail] = useState<string>('');
-  const [verificationToken, setVerificationToken] = useState<string>('');
   const [authChecking, setAuthChecking] = useState<boolean>(true);
 
   // Application main workspaces
@@ -35,13 +34,13 @@ export default function App() {
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [focusedIssue, setFocusedIssue] = useState<IssuePost | null>(null);
 
-  // Feed filter state (e.g. category, status, search, sorting)
+  // Feed filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('priority');
 
-  // Drawer-specific filter ('all' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings')
+  // Drawer filter
   const [drawerFilter, setDrawerFilter] = useState<'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings'>('home');
 
   // Validate session on load or token change
@@ -67,7 +66,6 @@ export default function App() {
         if (response.ok && data.user) {
           setUser(data.user);
         } else {
-          // Stale, expired, or invalid token, purge from storage
           setToken(null);
           setUser(null);
           localStorage.removeItem('fixdit_token');
@@ -95,9 +93,7 @@ export default function App() {
       queryParams.append('sortBy', sortBy);
 
       const response = await fetch(`/api/issues?${queryParams.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
@@ -124,7 +120,6 @@ export default function App() {
     setIsDrawerOpen(false);
   };
 
-  // Callback when a single issue is updated (upvoted, commented, status changes)
   const handleIssueUpdated = (updatedIssue: IssuePost) => {
     setIssues((prevIssues) =>
       prevIssues.map((issue) => (issue.id === updatedIssue.id ? updatedIssue : issue))
@@ -134,30 +129,21 @@ export default function App() {
     }
   };
 
-  const handleFocusOnMap = (issue: IssuePost) => {
-    setFocusedIssue(issue);
-  };
-
-  const handleFocusFromMap = (issue: IssuePost) => {
-    setFocusedIssue(issue);
-  };
+  const handleFocusOnMap = (issue: IssuePost) => setFocusedIssue(issue);
+  const handleFocusFromMap = (issue: IssuePost) => setFocusedIssue(issue);
 
   const handleDrawerNavigate = (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings') => {
     setDrawerFilter(view);
     setActiveTab('feed');
   };
 
-  // Client side drawer view filtering
   const getFilteredIssuesList = () => {
     let result = [...issues];
-
     if (drawerFilter === 'my-reports' && user) {
       result = result.filter(issue => issue.creator === user.username);
     } else if (drawerFilter === 'saved-reports' && user) {
-      // Saved reports means reports upvoted by user
       result = result.filter(issue => issue.upvoters?.includes(user.username));
     }
-
     return result;
   };
 
@@ -180,15 +166,15 @@ export default function App() {
     );
   }
 
-  // Not Logged In View: Login, Signup, or Verification
+  // Not Logged In View
   if (!user || !token) {
     return (
-      <div 
-        className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased selection:bg-orange-500 selection:text-white relative overflow-hidden" 
+      <div
+        className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased selection:bg-orange-500 selection:text-white relative overflow-hidden"
         id="fixdit-auth-app"
-        style={{ 
-          backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', 
-          backgroundSize: '24px 24px' 
+        style={{
+          backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+          backgroundSize: '24px 24px'
         }}
       >
         <div className="absolute top-8 left-8 text-xs font-mono text-slate-400 select-none hidden lg:flex items-center gap-2">
@@ -212,9 +198,9 @@ export default function App() {
 
           {authView === 'signup' && (
             <SignUp
-              onRegisterSuccess={(email, token) => {
+              onRegisterSuccess={(email) => {
+                // Only receive the email — no OTP token, no shortcut
                 setVerificationEmail(email);
-                setVerificationToken(token || '');
                 setAuthView('verification');
               }}
               onNavigateToLogin={() => setAuthView('login')}
@@ -224,7 +210,6 @@ export default function App() {
           {authView === 'verification' && (
             <EmailVerification
               email={verificationEmail}
-              initialOtp={verificationToken}
               onBackToLogin={() => setAuthView('login')}
             />
           )}
@@ -236,7 +221,6 @@ export default function App() {
   // Logged In Main Application
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased" id="fixdit-app">
-      {/* Navbar Header */}
       <Navbar
         currentUser={user}
         onOpenProfile={() => setIsDrawerOpen(true)}
@@ -253,7 +237,6 @@ export default function App() {
         }}
       />
 
-      {/* Profile Drawer */}
       <ProfileDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -264,19 +247,14 @@ export default function App() {
         activeView={drawerFilter}
       />
 
-      {/* Main Workspace Frame */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8" id="app-workspace-container">
         {activeTab === 'stats' ? (
-          /* Workspace tab 2: Civic stats transparency dashboard */
           <CivicStatsDashboard token={token} />
         ) : (
-          /* Workspace tab 1: Home Feed or Custom Drawer-Filtered view list */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Left/Middle Primary Column: Reporting Form, Filters & Feed Cards */}
+
             <div className="lg:col-span-7 space-y-6">
-              
-              {/* Active navigation context header if we have custom drawer filters active */}
+
               {drawerFilter !== 'home' && (
                 <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-between animate-fadeIn">
                   <div className="flex items-center gap-2 text-xs font-bold text-orange-800">
@@ -294,7 +272,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Drawer View - Custom non-feed tabs */}
               {drawerFilter === 'notifications' ? (
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 animate-fadeIn">
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -356,9 +333,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* Standard Feed view */
                 <>
-                  {/* Create New Issue Form */}
                   {showCreateIssue && (
                     <ReportIssueForm
                       token={token}
@@ -373,7 +348,6 @@ export default function App() {
 
                   {/* Filter & Search Bar */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4" id="feed-search-filter-controls">
-                    {/* Top Row: Search */}
                     <div className="relative">
                       <input
                         type="text"
@@ -385,9 +359,7 @@ export default function App() {
                       <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-3" />
                     </div>
 
-                    {/* Bottom Row: Selector drop-downs */}
                     <div className="grid grid-cols-3 gap-2.5 items-center">
-                      {/* Filter by Category */}
                       <div className="space-y-1">
                         <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">Category</label>
                         <select
@@ -405,7 +377,6 @@ export default function App() {
                         </select>
                       </div>
 
-                      {/* Filter by Status */}
                       <div className="space-y-1">
                         <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">Status</label>
                         <select
@@ -421,7 +392,6 @@ export default function App() {
                         </select>
                       </div>
 
-                      {/* Sort By */}
                       <div className="space-y-1">
                         <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">Sort</label>
                         <select
@@ -475,10 +445,8 @@ export default function App() {
               )}
             </div>
 
-            {/* Right Interactive Sidebar Column: Leaflet Map & Mini Stats summary */}
+            {/* Right Sidebar */}
             <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
-              
-              {/* Map Panel */}
               <div className="h-[380px] lg:h-[480px]">
                 <CivicMap
                   issues={issues}
@@ -487,7 +455,6 @@ export default function App() {
                 />
               </div>
 
-              {/* Informative Community Help Widget */}
               <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-3.5 relative overflow-hidden">
                 <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-slate-100 rounded text-[9px] text-slate-400 uppercase font-sans font-bold">
                   SF CO-OP
@@ -498,7 +465,7 @@ export default function App() {
                 </h4>
                 <div className="space-y-2 text-xs text-slate-500 leading-relaxed">
                   <p>
-                    Fixdit connects citizens and local municipal workers to accelerate infrastructure repair. 
+                    Fixdit connects citizens and local municipal workers to accelerate infrastructure repair.
                     Upload a photo of an issue (pothole, leakage, dumping) to run an immediate <strong>Gemini Vision AI</strong> audit.
                   </p>
                   <p>
@@ -507,7 +474,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-            
+
           </div>
         )}
       </main>
