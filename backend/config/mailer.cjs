@@ -1,30 +1,20 @@
 'use strict';
 
-const nodemailer = require('nodemailer');
+const { Resend } = require("resend");
+
+const getResend = () => {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("Email service is not configured. Set RESEND_API_KEY.");
+  }
+
+  return new Resend(process.env.RESEND_API_KEY);
+};
 
 const generateVerificationOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-/**
- * Build the SMTP transporter on each call so env vars are read at
- * runtime (not at module load time), which avoids issues on Render
- * where env vars may not be set during the build phase.
- *
- * Port 465 + secure:true (implicit TLS) is the most reliable Gmail
- * path from cloud providers like Render. Port 587 STARTTLS is often
- * blocked or causes ENETUNREACH on IPv6 paths.
- * family:4 forces IPv4 and prevents ENETUNREACH on dual-stack hosts.
- */
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-};
+
 
 /**
  * Send a verification OTP email.
@@ -36,18 +26,13 @@ const createTransporter = () => {
  * @returns {Promise<string>} the OTP that was sent
  */
 const sendVerificationOTP = async (email, otp) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error(
-      'Email service is not configured. ' +
-      'Set EMAIL_USER and EMAIL_PASS environment variables on Render.'
-    );
-  }
 
   const code = otp || generateVerificationOTP();
-  const transporter = createTransporter();
+  
+  const resend = getResend();
 
-  await transporter.sendMail({
-    from: `"Fixdit" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: "Fixdit <onboarding@resend.dev>",
     to: email,
     subject: 'Verify your Fixdit Account',
     text: `Your Fixdit verification code is ${code}. It expires in 10 minutes.`,
