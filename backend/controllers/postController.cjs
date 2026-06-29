@@ -1,4 +1,5 @@
 const Post = require('../models/Post.cjs');
+const { getDepartmentForCategory } = require('../utils/departments.cjs');
 
 // Helper to calculate distance in meters for the in-memory fallback
 const calculateDistanceInMeters = (lat1, lon1, lat2, lon2) => {
@@ -58,7 +59,7 @@ const createPost = async (req, res) => {
       images: normalizedImages,
       aiAnalysis: aiAnalysis || null,
       aiSummary: aiSummary || (aiAnalysis ? aiAnalysis.summary : ''),
-      assignedDepartment: assignedDepartment || (aiAnalysis ? aiAnalysis.suggestedAction : ''),
+      assignedDepartment: assignedDepartment || (aiAnalysis ? aiAnalysis.suggestedAction : getDepartmentForCategory(category)),
       category,
       severity: severity || 'Medium',
       status: req.body.status || 'Pending',
@@ -206,7 +207,7 @@ const updatePost = async (req, res) => {
     }
 
     const isAuthor = String(post.author._id || post.author) === String(req.user._id);
-    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator' || req.user.role === 'official';
+    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'official';
 
     if (!isAuthor && !isAdminOrMod) {
       return res.status(403).json({ error: 'Not authorized to update this post.' });
@@ -243,7 +244,7 @@ const updatePost = async (req, res) => {
       }
     }
 
-    // If admin or moderator, allow changing status, severity, AI analysis, verifiedBy, resolvedAt
+    // If admin or official, allow changing status, severity, AI analysis, verifiedBy, resolvedAt
     if (isAdminOrMod) {
       allowedStaffFields.forEach(field => {
         if (req.body[field] !== undefined) {
@@ -295,7 +296,7 @@ const deletePost = async (req, res) => {
     }
 
     const isAuthor = String(post.author._id || post.author) === String(req.user._id);
-    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator' || req.user.role === 'official';
+    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'official';
 
     if (!isAuthor && !isAdminOrMod) {
       return res.status(403).json({ error: 'Not authorized to delete this post.' });

@@ -12,6 +12,11 @@ import { IssueCard } from './components/IssueCard';
 import { CivicMap } from './components/CivicMap';
 import { ReportIssueForm } from './components/ReportIssueForm';
 import { CivicStatsDashboard } from './components/CivicStatsDashboard';
+import { OfficialApplicationPanel } from './components/OfficialApplicationPanel';
+import { NotificationsPanel } from './components/NotificationsPanel';
+import { SettingsPanel } from './components/SettingsPanel';
+import { AdminDashboard } from './components/AdminDashboard';
+import { OfficialDashboard } from './components/OfficialDashboard';
 import { IssuePost } from './types';
 
 export default function App() {
@@ -25,7 +30,7 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
 
   // Application main workspaces
-  const [activeTab, setActiveTab] = useState<'feed' | 'stats'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'stats' | 'official-dashboard' | 'admin-dashboard'>('feed');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showCreateIssue, setShowCreateIssue] = useState(false);
 
@@ -33,6 +38,7 @@ export default function App() {
   const [issues, setIssues] = useState<IssuePost[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [focusedIssue, setFocusedIssue] = useState<IssuePost | null>(null);
+  const [feedMode, setFeedMode] = useState<'active' | 'resolved'>('active');
 
   // Feed filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +47,7 @@ export default function App() {
   const [sortBy, setSortBy] = useState('priority');
 
   // Drawer filter
-  const [drawerFilter, setDrawerFilter] = useState<'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings'>('home');
+  const [drawerFilter, setDrawerFilter] = useState<'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application'>('home');
 
   // Validate session on load or token change
   useEffect(() => {
@@ -129,20 +135,52 @@ export default function App() {
     }
   };
 
+  const handleSaveToggled = (issueId: string, saved: boolean) => {
+    setUser((currentUser: any) => {
+      if (!currentUser) return currentUser;
+      const savedReports = Array.isArray(currentUser.savedReports) ? [...currentUser.savedReports.map(String)] : [];
+      const normalizedIssueId = String(issueId);
+      const existingIndex = savedReports.indexOf(normalizedIssueId);
+      if (saved && existingIndex === -1) {
+        savedReports.push(normalizedIssueId);
+      }
+      if (!saved && existingIndex > -1) {
+        savedReports.splice(existingIndex, 1);
+      }
+      return { ...currentUser, savedReports };
+    });
+  };
+
   const handleFocusOnMap = (issue: IssuePost) => setFocusedIssue(issue);
   const handleFocusFromMap = (issue: IssuePost) => setFocusedIssue(issue);
 
-  const handleDrawerNavigate = (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings') => {
+  const handleDrawerNavigate = (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => {
+    if (view === 'admin-dashboard') {
+      setActiveTab('admin-dashboard');
+      setDrawerFilter('home');
+      return;
+    }
+    if (view === 'official-application') {
+      setDrawerFilter('official-application');
+      setActiveTab('feed');
+      return;
+    }
     setDrawerFilter(view);
     setActiveTab('feed');
   };
 
   const getFilteredIssuesList = () => {
     let result = [...issues];
+    if (feedMode === 'active') {
+      result = result.filter((issue) => ['pending', 'accepted', 'in_progress'].includes(String(issue.status)));
+    } else if (feedMode === 'resolved') {
+      result = result.filter((issue) => ['resolved', 'verified'].includes(String(issue.status)));
+    }
     if (drawerFilter === 'my-reports' && user) {
       result = result.filter(issue => issue.creator === user.username);
     } else if (drawerFilter === 'saved-reports' && user) {
-      result = result.filter(issue => issue.upvoters?.includes(user.username));
+      const savedIds = Array.isArray(user.savedReports) ? user.savedReports.map(String) : [];
+      result = result.filter(issue => savedIds.includes(String(issue.id)));
     }
     return result;
   };
@@ -251,6 +289,10 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8" id="app-workspace-container">
         {activeTab === 'stats' ? (
           <CivicStatsDashboard token={token} />
+        ) : activeTab === 'official-dashboard' ? (
+          <OfficialDashboard user={user} issues={issues} />
+        ) : activeTab === 'admin-dashboard' ? (
+          <AdminDashboard token={token} currentUser={user} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
@@ -271,68 +313,16 @@ export default function App() {
                     Clear Filter
                   </button>
                 </div>
+                )}
+
+              {drawerFilter === 'official-application' && (
+                <OfficialApplicationPanel token={token} user={user} />
               )}
 
               {drawerFilter === 'notifications' ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 animate-fadeIn">
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-orange-500" />
-                    Civic Alerts & Notifications
-                  </h3>
-                  <div className="space-y-2.5">
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs flex justify-between items-start gap-4">
-                      <div>
-                        <p className="font-bold text-slate-800">Water pipeline burst on Jefferson St has been closed.</p>
-                        <p className="text-slate-400 text-[10px] mt-0.5">Reported fixed by SF Water Enterprise team with verification photos.</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono font-bold shrink-0">2h ago</span>
-                    </div>
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs flex justify-between items-start gap-4">
-                      <div>
-                        <p className="font-bold text-slate-800">Deep pothole in Mission Street has been verified.</p>
-                        <p className="text-slate-400 text-[10px] mt-0.5">Assigned priority dispatch Code-91 by Department of Public Works.</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono font-bold shrink-0">4h ago</span>
-                    </div>
-                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs flex justify-between items-start gap-4">
-                      <div>
-                        <p className="font-bold text-slate-800">Broken Streetlight SF-3802 received another upvote.</p>
-                        <p className="text-slate-400 text-[10px] mt-0.5">Priority score increased to 190. High safety urgency noted.</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono font-bold shrink-0">1d ago</span>
-                    </div>
-                  </div>
-                </div>
+                <NotificationsPanel token={token} />
               ) : drawerFilter === 'settings' ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 animate-fadeIn">
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                    <SettingsIcon className="w-5 h-5 text-orange-500" />
-                    Gateway Preferences
-                  </h3>
-                  <div className="space-y-4 text-xs">
-                    <div className="flex justify-between items-center p-3 border-b border-slate-100">
-                      <div>
-                        <p className="font-bold text-slate-800">Email Alerts on Solved Cases</p>
-                        <p className="text-slate-400 text-[10px]">Send email alerts immediately when reported cases are resolved.</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="accent-orange-500 h-4 w-4" />
-                    </div>
-                    <div className="flex justify-between items-center p-3 border-b border-slate-100">
-                      <div>
-                        <p className="font-bold text-slate-800">Developer Testing Sandbox Logs</p>
-                        <p className="text-slate-400 text-[10px]">Log full base64 Gemini vision model payload parameters on-screen.</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="accent-orange-500 h-4 w-4" />
-                    </div>
-                    <div className="flex justify-between items-center p-3">
-                      <div>
-                        <p className="font-bold text-slate-800">Auto-Center Map on Pins</p>
-                        <p className="text-slate-400 text-[10px]">Animate camera position dynamically when selecting reported issues.</p>
-                      </div>
-                      <input type="checkbox" defaultChecked className="accent-orange-500 h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
+                <SettingsPanel token={token} user={user} onUserUpdated={setUser} />
               ) : (
                 <>
                   {showCreateIssue && (
@@ -349,6 +339,20 @@ export default function App() {
 
                   {/* Filter & Search Bar */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4" id="feed-search-filter-controls">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setFeedMode('active')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${feedMode === 'active' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-white text-slate-500 border-slate-200'}`}
+                      >
+                        Active Feed
+                      </button>
+                      <button
+                        onClick={() => setFeedMode('resolved')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${feedMode === 'resolved' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-white text-slate-500 border-slate-200'}`}
+                      >
+                        Resolved Feed
+                      </button>
+                    </div>
                     <div className="relative">
                       <input
                         type="text"
@@ -386,10 +390,12 @@ export default function App() {
                           className="w-full text-[10px] sm:text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200/60 p-2 rounded-lg outline-none cursor-pointer"
                         >
                           <option value="">All Statuses</option>
-                          <option value="reported">Reported (Open)</option>
+                          <option value="pending">Pending (Open)</option>
+                          <option value="accepted">Accepted</option>
                           <option value="verified">Verified (DPW Checked)</option>
                           <option value="in_progress">In Progress</option>
                           <option value="resolved">Resolved (Closed)</option>
+                          <option value="rejected">Rejected</option>
                         </select>
                       </div>
 
@@ -436,6 +442,7 @@ export default function App() {
                           token={token}
                           currentUser={user}
                           onIssueUpdated={handleIssueUpdated}
+                          onSaveToggled={handleSaveToggled}
                           onFocusOnMap={handleFocusOnMap}
                           isFocused={focusedIssue?.id === issue.id}
                         />
@@ -470,7 +477,7 @@ export default function App() {
                     Upload a photo of an issue (pothole, leakage, dumping) to run an immediate <strong>Gemini Vision AI</strong> audit.
                   </p>
                   <p>
-                    Upvote urgent matters to dynamically amplify their <strong>Priority Score</strong>. City staff or active responders can patch the issue and upload physical completion proof right on the card.
+                    Upvote urgent matters to dynamically amplify their <strong>Priority Score</strong>. Officials or active responders can patch the issue and upload physical completion proof right on the card.
                   </p>
                 </div>
               </div>

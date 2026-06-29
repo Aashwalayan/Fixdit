@@ -207,7 +207,7 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
         aiSummary: aiSummary,
         suggestedDepartment: suggestedDepartment || 'Department of Public Works',
         creator: username,
-        status: 'reported',
+        status: 'pending',
       };
 
       const response = await fetch('/api/issues', {

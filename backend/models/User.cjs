@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ROLE_VALUES = new Set(['user', 'official', 'employee', 'staff', 'moderator', 'admin']);
+const ROLE_VALUES = new Set(['user', 'official', 'admin']);
 const normalizeRole = (role) => String(role || '').trim().toLowerCase();
 
 const userSchema = new mongoose.Schema(
@@ -22,6 +22,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a password'],
     },
+    displayName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    department: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    designation: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     emailVerified: {
       type: Boolean,
       default: false,
@@ -29,11 +44,37 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       default: 'user',
-      enum: ['user', 'official', 'employee', 'staff', 'moderator', 'admin'],
+      enum: ['user', 'official', 'admin'],
     },
     profilePicture: {
       type: String,
       default: '',
+    },
+    savedReports: {
+      type: [String],
+      default: [],
+    },
+    anonymousReportingDefault: {
+      type: Boolean,
+      default: false,
+    },
+    showProfilePublicly: {
+      type: Boolean,
+      default: true,
+    },
+    showActivity: {
+      type: Boolean,
+      default: true,
+    },
+    notificationPreferences: {
+      type: {
+        emailNotifications: { type: Boolean, default: true },
+        pushNotifications: { type: Boolean, default: false },
+        commentNotifications: { type: Boolean, default: true },
+        statusUpdates: { type: Boolean, default: true },
+        officialUpdates: { type: Boolean, default: true },
+      },
+      default: undefined,
     },
     verificationOTP: {
       type: String,
@@ -220,9 +261,23 @@ const User = {
       username: String(data.username || '').trim(),
       email: String(data.email || '').trim().toLowerCase(),
       password: data.password,
+      displayName: data.displayName || data.username || '',
+      department: data.department || '',
+      designation: data.designation || '',
       emailVerified: data.emailVerified !== undefined ? data.emailVerified : false,
       role: safeRole,
       profilePicture: data.profilePicture || '',
+      savedReports: Array.isArray(data.savedReports) ? data.savedReports : [],
+      anonymousReportingDefault: data.anonymousReportingDefault || false,
+      showProfilePublicly: data.showProfilePublicly !== undefined ? data.showProfilePublicly : true,
+      showActivity: data.showActivity !== undefined ? data.showActivity : true,
+      notificationPreferences: data.notificationPreferences || {
+        emailNotifications: true,
+        pushNotifications: false,
+        commentNotifications: true,
+        statusUpdates: true,
+        officialUpdates: true,
+      },
       verificationOTP: data.verificationOTP || null,
       otpExpires: data.otpExpires || null,
       createdAt: new Date(),

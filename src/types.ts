@@ -5,7 +5,7 @@ export interface ResolutionProof {
 }
 
 export type SeverityType = 'critical' | 'high' | 'medium' | 'low';
-export type StatusType = 'reported' | 'verified' | 'in_progress' | 'resolved';
+export type StatusType = 'pending' | 'accepted' | 'in_progress' | 'resolved' | 'verified' | 'rejected';
 
 export interface IssuePost {
   id: string;

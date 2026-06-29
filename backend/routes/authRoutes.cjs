@@ -8,6 +8,7 @@ const {
   resendOTP,
   logoutUser,
   getMe,
+  updateMe,
 } = require('../controllers/authController.cjs');
 
 const { protect } = require('../middleware/authMiddleware.cjs');
@@ -21,5 +22,6 @@ router.post('/logout', logoutUser);
 
 // Protected endpoints
 router.get('/me', protect, getMe);
+router.patch('/me', protect, updateMe);
 
 module.exports = router;

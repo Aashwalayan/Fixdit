@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User.cjs');
 
-const OFFICIAL_ROLES = ['official', 'employee', 'staff', 'moderator'];
+const OFFICIAL_ROLES = ['official'];
 
 const normalizeRole = (role) => String(role || '').trim().toLowerCase();
 

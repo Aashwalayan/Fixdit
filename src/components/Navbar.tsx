@@ -9,8 +9,8 @@ interface NavbarProps {
   onOpenProfile: () => void;
   onToggleCreateIssue: () => void;
   showCreateIssue: boolean;
-  activeTab: 'feed' | 'stats';
-  setActiveTab: (tab: 'feed' | 'stats') => void;
+  activeTab: 'feed' | 'stats' | 'official-dashboard' | 'admin-dashboard';
+  setActiveTab: (tab: 'feed' | 'stats' | 'official-dashboard' | 'admin-dashboard') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -66,6 +66,30 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Transparency Metrics
               </button>
+              {(currentUser?.role === 'official' || currentUser?.role === 'admin') && (
+                <button
+                  onClick={() => setActiveTab('official-dashboard')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold tracking-tight transition cursor-pointer ${
+                    activeTab === 'official-dashboard'
+                      ? 'bg-orange-50 text-orange-600 border border-orange-100'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                  }`}
+                >
+                  Official Dashboard
+                </button>
+              )}
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={() => setActiveTab('admin-dashboard')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold tracking-tight transition cursor-pointer ${
+                    activeTab === 'admin-dashboard'
+                      ? 'bg-orange-50 text-orange-600 border border-orange-100'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                  }`}
+                >
+                  Admin Dashboard
+                </button>
+              )}
             </div>
           </div>
 

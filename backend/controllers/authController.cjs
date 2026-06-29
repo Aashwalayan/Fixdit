@@ -91,6 +91,7 @@ const registerUser = async (req, res) => {
       username: normalizedUsername,
       email: normalizedEmail,
       password: hashedPassword,
+      displayName: normalizedUsername,
       emailVerified: false,
       role: 'user',
       profilePicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedUsername)}`,
@@ -161,6 +162,14 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         profilePicture: user.profilePicture,
+        displayName: user.displayName,
+        department: user.department,
+        designation: user.designation,
+        savedReports: user.savedReports || [],
+        anonymousReportingDefault: user.anonymousReportingDefault || false,
+        showProfilePublicly: user.showProfilePublicly !== undefined ? user.showProfilePublicly : true,
+        showActivity: user.showActivity !== undefined ? user.showActivity : true,
+        notificationPreferences: user.notificationPreferences || {},
       }
     });
 
@@ -296,6 +305,14 @@ const getMe = async (req, res) => {
         role: req.user.role,
         profilePicture: req.user.profilePicture,
         emailVerified: req.user.emailVerified,
+        displayName: req.user.displayName,
+        department: req.user.department,
+        designation: req.user.designation,
+        savedReports: req.user.savedReports || [],
+        anonymousReportingDefault: req.user.anonymousReportingDefault || false,
+        showProfilePublicly: req.user.showProfilePublicly !== undefined ? req.user.showProfilePublicly : true,
+        showActivity: req.user.showActivity !== undefined ? req.user.showActivity : true,
+        notificationPreferences: req.user.notificationPreferences || {},
         createdAt: req.user.createdAt,
         updatedAt: req.user.updatedAt,
       }
@@ -307,6 +324,77 @@ const getMe = async (req, res) => {
   }
 };
 
+// @desc    Update currently authenticated user profile/settings
+// @route   PATCH /api/auth/me
+// @access  Private
+const updateMe = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authorized.' });
+    }
+
+    const allowedFields = [
+      'username',
+      'displayName',
+      'profilePicture',
+      'anonymousReportingDefault',
+      'showProfilePublicly',
+      'showActivity',
+      'notificationPreferences',
+    ];
+
+    const updates = {};
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    if (updates.username) {
+      const normalizedUsername = String(updates.username).trim();
+      if (normalizedUsername.length < 3) {
+        return res.status(400).json({ error: 'Username must be at least 3 characters long.' });
+      }
+      const usernameExists = await User.findOne({ username: normalizedUsername });
+      if (usernameExists && String(usernameExists._id) !== String(req.user._id)) {
+        return res.status(400).json({ error: 'Username is already taken.' });
+      }
+      updates.username = normalizedUsername;
+      if (!updates.displayName) {
+        updates.displayName = normalizedUsername;
+      }
+    }
+
+    if (updates.notificationPreferences && typeof updates.notificationPreferences !== 'object') {
+      return res.status(400).json({ error: 'Notification preferences must be an object.' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+
+    return res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: {
+        id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        profilePicture: updatedUser.profilePicture,
+        displayName: updatedUser.displayName,
+        department: updatedUser.department,
+        designation: updatedUser.designation,
+        savedReports: updatedUser.savedReports || [],
+        anonymousReportingDefault: updatedUser.anonymousReportingDefault || false,
+        showProfilePublicly: updatedUser.showProfilePublicly !== undefined ? updatedUser.showProfilePublicly : true,
+        showActivity: updatedUser.showActivity !== undefined ? updatedUser.showActivity : true,
+        notificationPreferences: updatedUser.notificationPreferences || {},
+      },
+    });
+  } catch (error) {
+    console.error(`UpdateMe profile error: ${error.message}`);
+    return res.status(500).json({ error: 'Server error while updating profile.' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -314,4 +402,5 @@ module.exports = {
   resendOTP,
   logoutUser,
   getMe,
+  updateMe,
 };

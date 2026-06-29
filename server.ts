@@ -11,13 +11,27 @@ import authRoutes from "./backend/routes/authRoutes.cjs";
 // @ts-ignore
 import adminRoutes from "./backend/routes/adminRoutes.cjs";
 // @ts-ignore
+import departmentRoutes from "./backend/routes/departmentRoutes.cjs";
+// @ts-ignore
+import officialApplicationRoutes from "./backend/routes/officialApplicationRoutes.cjs";
+// @ts-ignore
+import notificationRoutes from "./backend/routes/notificationRoutes.cjs";
+// @ts-ignore
+import userRoutes from "./backend/routes/userRoutes.cjs";
+// @ts-ignore
 import postRoutes from "./backend/routes/postRoutes.cjs";
 // @ts-ignore
 import Post from "./backend/models/Post.cjs";
 // @ts-ignore
+import User from "./backend/models/User.cjs";
+// @ts-ignore
 import { protect } from "./backend/middleware/authMiddleware.cjs";
 // @ts-ignore
 import { bootstrapAdminFromEnv } from "./backend/utils/adminLifecycle.cjs";
+// @ts-ignore
+import { getDepartmentForCategory } from "./backend/utils/departments.cjs";
+// @ts-ignore
+import Notification from "./backend/models/Notification.cjs";
 
 // Load environment variables
 dotenv.config();
@@ -51,10 +65,17 @@ const defaultIssueLocation = {
 };
 
 function normalizeStatus(status: string | undefined): StatusType {
-  if (status === "verified" || status === "in_progress" || status === "resolved") {
+  if (
+    status === "pending" ||
+    status === "accepted" ||
+    status === "verified" ||
+    status === "in_progress" ||
+    status === "resolved" ||
+    status === "rejected"
+  ) {
     return status;
   }
-  return "reported";
+  return "pending";
 }
 
 function mapPostToIssue(post: any): IssuePost {
@@ -145,6 +166,14 @@ function calculateDistanceInMeters(lat1: number, lon1: number, lat2: number, lon
 app.use("/api/auth", authRoutes);
 // Admin routes
 app.use("/api/admin", adminRoutes);
+// Department routes
+app.use("/api/departments", departmentRoutes);
+// Official application routes
+app.use("/api/official-applications", officialApplicationRoutes);
+// Notification routes
+app.use("/api/notifications", notificationRoutes);
+// User routes
+app.use("/api/users", userRoutes);
 // Post routes
 app.use("/api/posts", postRoutes);
 
@@ -430,7 +459,7 @@ app.post("/api/issues", protect, async (req: any, res) => {
       },
       images: finalImage ? [{ url: finalImage }] : [],
       aiSummary: aiSummary || "",
-      assignedDepartment: suggestedDepartment || "Department of Public Works",
+      assignedDepartment: suggestedDepartment || getDepartmentForCategory(category),
       author: req.user._id,
       upvotes: 0,
       upvoters: [],
@@ -438,6 +467,14 @@ app.post("/api/issues", protect, async (req: any, res) => {
     });
 
     const hydratedPost = await Post.findById(createdPost._id);
+    const admins = await User.find({ role: 'admin' });
+    await Promise.all(admins.map((admin: any) => Notification.create({
+      recipient: admin._id,
+      type: 'report_created',
+      title: 'New report submitted',
+      message: `${req.user.username} created a new report: ${title}.`,
+      metadata: { postId: String(createdPost._id) },
+    })));
     res.status(201).json(mapPostToIssue(hydratedPost || createdPost));
   } catch (error: any) {
     console.error("Issue creation failed:", error);
@@ -478,6 +515,15 @@ app.post("/api/issues/:id/vote", protect, async (req: any, res) => {
     );
 
     const mappedIssue = mapPostToIssue(updatedPost || post);
+    if (String(post.author?._id || post.author || '') !== String(req.user._id)) {
+      await Notification.create({
+        recipient: post.author?._id || post.author,
+        type: 'report_status',
+        title: 'Report status updated',
+        message: `Your report "${post.title}" is now ${mappedIssue.status.replace('_', ' ')}.`,
+        metadata: { postId: String(post._id) },
+      });
+    }
     res.json({
       upvotes: mappedIssue.upvotes,
       upvoters: mappedIssue.upvoters,
@@ -548,6 +594,15 @@ app.post("/api/issues/:id/comments", protect, async (req: any, res) => {
     );
 
     const mappedComments = mapPostComments(updatedPost || post);
+    if (String(post.author?._id || post.author || '') !== String(req.user._id)) {
+      await Notification.create({
+        recipient: post.author?._id || post.author,
+        type: 'report_comment',
+        title: 'New comment on your report',
+        message: `${req.user.username} commented on "${post.title}".`,
+        metadata: { postId: String(post._id) },
+      });
+    }
     res.status(201).json(mappedComments[mappedComments.length - 1]);
   } catch (error: any) {
     console.error("Issue comment creation failed:", error);
@@ -568,7 +623,7 @@ app.patch("/api/issues/:id/status", protect, async (req: any, res) => {
     const creatorId = String(post.author?._id || post.author || "");
     const currentUserId = String(req.user?._id || "");
     const isCreator = creatorId === currentUserId;
-    const isStaff = ["admin", "official", "employee", "staff", "moderator"].includes(req.user?.role);
+    const isStaff = ["admin", "official"].includes(req.user?.role);
 
     if (!isCreator && !isStaff) {
       return res.status(403).json({ error: "Not authorized to update this issue." });
@@ -592,6 +647,15 @@ app.patch("/api/issues/:id/status", protect, async (req: any, res) => {
     }
 
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, nextUpdate, { new: true });
+    if (String(post.author?._id || post.author || '') !== String(req.user._id)) {
+      await Notification.create({
+        recipient: post.author?._id || post.author,
+        type: 'report_status',
+        title: 'Report progress updated',
+        message: `Your report "${post.title}" was updated to ${nextStatus.replace('_', ' ')}.`,
+        metadata: { postId: String(post._id) },
+      });
+    }
     res.json(mapPostToIssue(updatedPost || post));
   } catch (error: any) {
     console.error("Issue status update failed:", error);

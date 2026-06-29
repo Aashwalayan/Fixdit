@@ -11,6 +11,7 @@ interface IssueCardProps {
   token: string;
   currentUser: any;
   onIssueUpdated: (updatedIssue: IssuePost) => void;
+  onSaveToggled?: (issueId: string, saved: boolean) => void;
   onFocusOnMap?: (issue: IssuePost) => void;
   isFocused?: boolean;
 }
@@ -20,6 +21,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   token,
   currentUser,
   onIssueUpdated,
+  onSaveToggled,
   onFocusOnMap,
   isFocused = false,
 }) => {
@@ -37,6 +39,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   const [proofNotes, setProofNotes] = useState('');
 
   const [voteLoading, setVoteLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   // Auto-scroll or highlight if focused
   useEffect(() => {
@@ -174,7 +177,30 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
   const isUpvotedByMe = issue.upvoters?.includes(currentUser.username) || false;
   const isCreatorMe = issue.creator === currentUser.username;
-  const isCityEmployee = ['admin', 'official', 'employee', 'staff', 'moderator'].includes(currentUser.role);
+  const isCityEmployee = ['admin', 'official'].includes(currentUser.role);
+  const isSavedByMe = Array.isArray(currentUser.savedReports) && currentUser.savedReports.map(String).includes(String(issue.id));
+
+  const handleSaveToggle = async () => {
+    if (saveLoading) return;
+    setSaveLoading(true);
+    try {
+      const response = await fetch(`/api/users/me/saved-reports/${issue.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        onSaveToggled?.(issue.id, !!data.saved);
+      }
+    } catch (error) {
+      console.error('Error toggling saved report:', error);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   // Styles based on severity
   const severityColors = {
@@ -185,10 +211,12 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   };
 
   const statusColors = {
-    reported: 'bg-slate-100 text-slate-800 border-slate-200',
+    pending: 'bg-slate-100 text-slate-800 border-slate-200',
+    accepted: 'bg-amber-50 text-amber-700 border-amber-200',
     verified: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
     resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-rose-50 text-rose-700 border-rose-200',
   };
 
   return (
@@ -209,8 +237,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${severityColors[issue.severity]}`}>
               {issue.severity}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${statusColors[issue.status as StatusType || 'reported']}`}>
-              {(issue.status || 'reported').replace('_', ' ')}
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${statusColors[(issue.status as StatusType) || 'pending'] || statusColors.pending}`}>
+              {(issue.status || 'pending').replace('_', ' ')}
             </span>
             <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
               Priority: {issue.priorityScore}
@@ -322,6 +350,17 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             <ArrowUp className={`w-4 h-4 ${isUpvotedByMe ? 'text-white' : 'text-slate-400'}`} />
             <span>Upvote {issue.upvotes}</span>
           </button>
+          <button
+            onClick={handleSaveToggle}
+            className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
+              isSavedByMe
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border-slate-200'
+            }`}
+          >
+            <Plus className={`w-4 h-4 ${isSavedByMe ? 'text-white' : 'text-slate-400'}`} />
+            <span>{saveLoading ? 'Saving...' : isSavedByMe ? 'Saved' : 'Save'}</span>
+          </button>
 
           {/* Comments Toggle Button */}
           <button
@@ -364,10 +403,12 @@ export const IssueCard: React.FC<IssueCardProps> = ({
                 onChange={(e) => setStatusInput(e.target.value)}
                 className="w-full p-2 rounded-lg border border-slate-200 bg-white"
               >
-                <option value="reported">Reported (Open)</option>
-                <option value="verified">Verified (DPW Inspected)</option>
+                <option value="pending">Pending (Open)</option>
+                <option value="accepted">Accepted (Queued)</option>
+                <option value="verified">Verified (Reviewed)</option>
                 <option value="in_progress">In Progress (Active Maintenance)</option>
                 <option value="resolved">Resolved (Complete & Clean)</option>
+                <option value="rejected">Rejected (Closed)</option>
               </select>
             </div>
 

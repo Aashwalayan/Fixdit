@@ -13,8 +13,8 @@ interface ProfileDrawerProps {
   user: any;
   onLogout: () => void;
   onUserUpdated?: (user: any) => void;
-  onNavigate: (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings') => void;
-  activeView: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings';
+  onNavigate: (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => void;
+  activeView: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard';
 }
 
 export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
@@ -32,11 +32,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
-  const [officials, setOfficials] = useState<any[]>([]);
-  const [selectedOfficialId, setSelectedOfficialId] = useState('');
-  const [transferLoading, setTransferLoading] = useState(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
 
   // Notifications mock count
   const mockNotifications = [
@@ -79,46 +74,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
     fetchProfile();
   }, [token, isOpen]);
 
-  useEffect(() => {
-    const fetchOfficials = async () => {
-      if (!isOpen || !token || String(profile?.role || user?.role || '').toLowerCase() !== 'admin') {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/admin/officials', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load official transfer targets.');
-        }
-
-        setOfficials(Array.isArray(data.officials) ? data.officials : []);
-        setSelectedOfficialId((current) => current || data.officials?.[0]?.id || '');
-      } catch (err: any) {
-        setTransferError(err.message || 'Unable to load official accounts.');
-      }
-    };
-
-    fetchOfficials();
-  }, [token, isOpen, profile?.role, user?.role]);
-
-  useEffect(() => {
-    if (String(profile?.role || '').toLowerCase() !== 'admin') {
-      setOfficials([]);
-      setSelectedOfficialId('');
-      setTransferError(null);
-      setTransferSuccess(null);
-    }
-  }, [profile?.role]);
-
   // Decode JWT client-side for visualization
   const getDecodedPayload = () => {
     try {
@@ -132,45 +87,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
   };
 
   const decodedPayload = getDecodedPayload();
-  const isAdmin = String(profile?.role || user?.role || '').toLowerCase() === 'admin';
-
-  const handleTransferAdmin = async () => {
-    if (!selectedOfficialId || transferLoading) return;
-    if (!window.confirm('Transfer administrator privileges to the selected official? The current admin will be downgraded to Official.')) {
-      return;
-    }
-
-    setTransferLoading(true);
-    setTransferError(null);
-    setTransferSuccess(null);
-
-    try {
-      const response = await fetch('/api/admin/transfer', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ targetUserId: selectedOfficialId }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Admin transfer failed.');
-      }
-
-      setProfile(data.previousAdmin || profile);
-      onUserUpdated?.(data.previousAdmin || profile);
-      setOfficials([]);
-      setSelectedOfficialId('');
-      setTransferSuccess('Admin privileges were transferred successfully.');
-    } catch (err: any) {
-      setTransferError(err.message || 'Unable to transfer admin privileges.');
-    } finally {
-      setTransferLoading(false);
-    }
-  };
 
   const navItems = [
     { id: 'home', label: 'Home Feed', icon: Home },
@@ -178,6 +94,12 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
     { id: 'saved-reports', label: 'Saved Reports', icon: Bookmark },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: mockNotifications.length },
     { id: 'settings', label: 'Settings', icon: Settings },
+    ...(String(profile?.role || user?.role || '').toLowerCase() === 'user'
+      ? [{ id: 'official-application', label: 'Apply to Become Official', icon: ShieldAlert }]
+      : []),
+    ...(String(profile?.role || user?.role || '').toLowerCase() === 'admin'
+      ? [{ id: 'admin-dashboard', label: 'Admin Dashboard', icon: Shield }]
+      : []),
   ] as const;
 
   return (
@@ -303,7 +225,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                       <button
                         key={item.id}
                         onClick={() => {
-                          onNavigate(item.id);
+                          onNavigate(item.id as 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard');
                           onClose();
                         }}
                         className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer ${
@@ -329,63 +251,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                   })}
                 </div>
               </div>
-
-              {isAdmin && (
-                <div className="border border-orange-100 bg-orange-50/40 rounded-2xl p-4 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Administrator Control</p>
-                      <h4 className="text-sm font-extrabold text-slate-900 mt-1">Transfer active admin privileges</h4>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-900 text-white">
-                      Exactly one admin
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Choose an existing official account to take over administrator access. The current admin will automatically become an official.
-                  </p>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">
-                      Transfer target
-                    </label>
-                    <select
-                      value={selectedOfficialId}
-                      onChange={(e) => setSelectedOfficialId(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 outline-none"
-                    >
-                      <option value="">Select an official</option>
-                      {officials.map((official) => (
-                        <option key={official.id} value={official.id}>
-                          {official.username} ({official.role})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {transferError && (
-                    <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-xs font-semibold">
-                      {transferError}
-                    </div>
-                  )}
-
-                  {transferSuccess && (
-                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold">
-                      {transferSuccess}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleTransferAdmin}
-                    disabled={transferLoading || !selectedOfficialId}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 text-white font-bold text-sm disabled:bg-slate-300 disabled:cursor-not-allowed"
-                  >
-                    {transferLoading ? 'Transferring...' : 'Confirm admin transfer'}
-                  </button>
-                </div>
-              )}
 
               {/* Collapsible Advanced JWT Inspector */}
               <div className="border border-slate-200 rounded-xl overflow-hidden">
