@@ -23,6 +23,7 @@ const generateVerificationOTP = () => {
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
+  console.log("REGISTER HIT");
   try {
     const { username, email, password } = req.body;
     const normalizedUsername = username?.trim();

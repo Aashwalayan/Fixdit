@@ -33,7 +33,7 @@ const sendVerificationOTP = async (email, otp) => {
   const resend = getResend();
 
   const {data, error } = await resend.emails.send({
-    from: "Fixdit <onboarding@resend.dev>",
+    from: "Fixdit <noreply@aashwalayan.in>",
     to: email,
     subject: 'Verify your Fixdit Account',
     text: `Your Fixdit verification code is ${code}. It expires in 10 minutes.`,
