@@ -9,17 +9,18 @@ import connectDB from "./backend/config/db.cjs";
 // @ts-ignore
 import authRoutes from "./backend/routes/authRoutes.cjs";
 // @ts-ignore
+import adminRoutes from "./backend/routes/adminRoutes.cjs";
+// @ts-ignore
 import postRoutes from "./backend/routes/postRoutes.cjs";
 // @ts-ignore
 import Post from "./backend/models/Post.cjs";
 // @ts-ignore
 import { protect } from "./backend/middleware/authMiddleware.cjs";
+// @ts-ignore
+import { bootstrapAdminFromEnv } from "./backend/utils/adminLifecycle.cjs";
 
 // Load environment variables
 dotenv.config();
-
-// Connect to Database
-connectDB();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -142,6 +143,8 @@ function calculateDistanceInMeters(lat1: number, lon1: number, lat2: number, lon
 // REST APIs
 // Auth routes
 app.use("/api/auth", authRoutes);
+// Admin routes
+app.use("/api/admin", adminRoutes);
 // Post routes
 app.use("/api/posts", postRoutes);
 
@@ -565,7 +568,7 @@ app.patch("/api/issues/:id/status", protect, async (req: any, res) => {
     const creatorId = String(post.author?._id || post.author || "");
     const currentUserId = String(req.user?._id || "");
     const isCreator = creatorId === currentUserId;
-    const isStaff = ["admin", "employee", "staff"].includes(req.user?.role);
+    const isStaff = ["admin", "official", "employee", "staff", "moderator"].includes(req.user?.role);
 
     if (!isCreator && !isStaff) {
       return res.status(403).json({ error: "Not authorized to update this issue." });
@@ -660,6 +663,11 @@ app.get("/test-gemini", async (req, res) => {
 
 // Vite server setup for development or static pages for production
 async function startServer() {
+  await connectDB();
+  await bootstrapAdminFromEnv().catch((error) => {
+    console.error(`Admin bootstrap skipped or failed: ${error.message}`);
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

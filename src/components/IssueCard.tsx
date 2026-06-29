@@ -174,7 +174,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
   const isUpvotedByMe = issue.upvoters?.includes(currentUser.username) || false;
   const isCreatorMe = issue.creator === currentUser.username;
-  const isCityEmployee = currentUser.role === 'admin' || currentUser.role === 'employee' || currentUser.role === 'staff';
+  const isCityEmployee = ['admin', 'official', 'employee', 'staff', 'moderator'].includes(currentUser.role);
 
   // Styles based on severity
   const severityColors = {

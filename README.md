@@ -18,3 +18,14 @@ View your app in AI Studio: https://ai.studio/apps/b092aaaf-73ac-44da-bb90-e9306
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Admin bootstrap
+
+The first administrator must be created manually or with the secure seed script.
+
+Set these environment variables before running `npm run seed:admin` or starting the app:
+
+- `FIXDIT_ADMIN_NAME`
+- `FIXDIT_ADMIN_EMAIL`
+- `FIXDIT_ADMIN_PASSWORD`
+- `FIXDIT_ADMIN_USERNAME` (optional)

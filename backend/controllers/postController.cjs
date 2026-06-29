@@ -206,7 +206,7 @@ const updatePost = async (req, res) => {
     }
 
     const isAuthor = String(post.author._id || post.author) === String(req.user._id);
-    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator';
+    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator' || req.user.role === 'official';
 
     if (!isAuthor && !isAdminOrMod) {
       return res.status(403).json({ error: 'Not authorized to update this post.' });
@@ -295,7 +295,7 @@ const deletePost = async (req, res) => {
     }
 
     const isAuthor = String(post.author._id || post.author) === String(req.user._id);
-    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator';
+    const isAdminOrMod = req.user.role === 'admin' || req.user.role === 'moderator' || req.user.role === 'official';
 
     if (!isAuthor && !isAdminOrMod) {
       return res.status(403).json({ error: 'Not authorized to delete this post.' });

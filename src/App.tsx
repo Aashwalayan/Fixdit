@@ -243,6 +243,7 @@ export default function App() {
         token={token}
         user={user}
         onLogout={handleLogout}
+        onUserUpdated={setUser}
         onNavigate={handleDrawerNavigate}
         activeView={drawerFilter}
       />

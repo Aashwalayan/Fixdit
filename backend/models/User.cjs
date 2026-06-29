@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+const ROLE_VALUES = new Set(['user', 'official', 'employee', 'staff', 'moderator', 'admin']);
+const normalizeRole = (role) => String(role || '').trim().toLowerCase();
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -26,6 +29,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       default: 'user',
+      enum: ['user', 'official', 'employee', 'staff', 'moderator', 'admin'],
     },
     profilePicture: {
       type: String,
@@ -80,6 +84,17 @@ const User = {
       normalizedQuery.username = String(normalizedQuery.username).trim();
     }
 
+    if (normalizedQuery.role) {
+      if (typeof normalizedQuery.role === 'string') {
+        normalizedQuery.role = normalizeRole(normalizedQuery.role);
+      } else if (normalizedQuery.role.$in && Array.isArray(normalizedQuery.role.$in)) {
+        normalizedQuery.role = {
+          ...normalizedQuery.role,
+          $in: normalizedQuery.role.$in.map((value) => normalizeRole(value)),
+        };
+      }
+    }
+
     if (Array.isArray(normalizedQuery.$or)) {
       normalizedQuery.$or = normalizedQuery.$or.map((clause) => {
         const normalizedClause = { ...clause };
@@ -117,13 +132,96 @@ const User = {
     });
   },
 
-  create: async (data) => {
+  find: async (query = {}) => {
+    const normalizedQuery = {
+      ...query,
+    };
+
+    if (normalizedQuery.email) {
+      normalizedQuery.email = String(normalizedQuery.email).trim().toLowerCase();
+    }
+
+    if (normalizedQuery.username) {
+      normalizedQuery.username = String(normalizedQuery.username).trim();
+    }
+
+    if (normalizedQuery.role) {
+      if (typeof normalizedQuery.role === 'string') {
+        normalizedQuery.role = normalizeRole(normalizedQuery.role);
+      } else if (normalizedQuery.role.$in && Array.isArray(normalizedQuery.role.$in)) {
+        normalizedQuery.role = {
+          ...normalizedQuery.role,
+          $in: normalizedQuery.role.$in.map((value) => normalizeRole(value)),
+        };
+      }
+    }
+
+    if (Array.isArray(normalizedQuery.$or)) {
+      normalizedQuery.$or = normalizedQuery.$or.map((clause) => {
+        const normalizedClause = { ...clause };
+        if (normalizedClause.email) {
+          normalizedClause.email = String(normalizedClause.email).trim().toLowerCase();
+        }
+        if (normalizedClause.username) {
+          normalizedClause.username = String(normalizedClause.username).trim();
+        }
+        if (normalizedClause.role) {
+          normalizedClause.role = normalizeRole(normalizedClause.role);
+        }
+        return normalizedClause;
+      });
+    }
+
+    if (isMongoConnected()) {
+      try {
+        return await MongooseUser.find(normalizedQuery);
+      } catch (err) {
+        console.error('Mongoose find error, falling back to memory:', err);
+      }
+    }
+
+    const matchesQuery = (user) => {
+      if (normalizedQuery._id && String(user._id) !== String(normalizedQuery._id)) return false;
+      if (normalizedQuery.email && user.email !== normalizedQuery.email) return false;
+      if (normalizedQuery.username && user.username !== normalizedQuery.username) return false;
+      if (normalizedQuery.emailVerified !== undefined && user.emailVerified !== normalizedQuery.emailVerified) return false;
+      if (normalizedQuery.role) {
+        if (typeof normalizedQuery.role === 'string' && normalizeRole(user.role) !== normalizedQuery.role) return false;
+        if (normalizedQuery.role.$in && Array.isArray(normalizedQuery.role.$in) && !normalizedQuery.role.$in.includes(normalizeRole(user.role))) return false;
+      }
+      if (normalizedQuery.$or && Array.isArray(normalizedQuery.$or)) {
+        const matchesAny = normalizedQuery.$or.some((clause) => {
+          if (clause.email && user.email === clause.email) return true;
+          if (clause.username && user.username === clause.username) return true;
+          if (clause.role && normalizeRole(user.role) === normalizeRole(clause.role)) return true;
+          return false;
+        });
+        if (!matchesAny) return false;
+      }
+      return true;
+    };
+
+    return global.memoryUsers.filter(matchesQuery);
+  },
+
+  countDocuments: async (query = {}) => {
+    const users = await User.find(query);
+    return users.length;
+  },
+
+  create: async (data, options = {}) => {
+    const requestedRole = normalizeRole(data.role || 'user');
+    if (requestedRole === 'admin' && !options.allowAdminCreation) {
+      throw new Error('Admin users can only be created through the secure bootstrap flow.');
+    }
+
+    const safeRole = ROLE_VALUES.has(requestedRole) ? requestedRole : 'user';
     const userData = {
       username: String(data.username || '').trim(),
       email: String(data.email || '').trim().toLowerCase(),
       password: data.password,
       emailVerified: data.emailVerified !== undefined ? data.emailVerified : false,
-      role: data.role || 'user',
+      role: safeRole,
       profilePicture: data.profilePicture || '',
       verificationOTP: data.verificationOTP || null,
       otpExpires: data.otpExpires || null,
@@ -159,10 +257,15 @@ const User = {
     return global.memoryUsers.find(u => String(u._id) === String(id));
   },
 
-  findByIdAndUpdate: async (id, update) => {
+  findByIdAndUpdate: async (id, update, mongooseOptions = { new: true }, options = {}) => {
+    const nextRole = normalizeRole(update?.$set?.role ?? update?.role ?? '');
+    if (nextRole === 'admin' && !options.allowAdminRole) {
+      throw new Error('Admin role changes must use the transfer flow.');
+    }
+
     if (isMongoConnected() && !String(id).startsWith('mem_')) {
       try {
-        return await MongooseUser.findByIdAndUpdate(id, update, { new: true });
+        return await MongooseUser.findByIdAndUpdate(id, update, mongooseOptions);
       } catch (err) {
         console.error('Mongoose findByIdAndUpdate error, falling back to memory:', err);
       }
@@ -172,9 +275,12 @@ const User = {
     if (index !== -1) {
       const updatedUser = {
         ...global.memoryUsers[index],
-        ...update,
+        ...(update.$set || update),
         updatedAt: new Date(),
       };
+      if (nextRole) {
+        updatedUser.role = nextRole;
+      }
       global.memoryUsers[index] = updatedUser;
       return updatedUser;
     }
