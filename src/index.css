@@ -1,9 +1,19 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+:root {
+  --bg: #ffffff;
+  --text: #1A1A1B;
+
+  --surface: #ffffff;
+  --border: #E2E8F0;
+
+  --primary: #FF6B00;
+}
+
 body {
-  background-color: #FFFFFF;
-  color: #1A1A1B;
+  background-color: var(--bg);
+  color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -21,4 +31,46 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #CBD5E1;
+}
+
+[data-theme="dark"] {
+  --bg: #111827;
+  --text: #F9FAFB;
+  --surface: #1F2937;
+  --border: #374151;
+  --primary: #FF6B00;
+}
+
+[data-theme="midnight-blue"] {
+  --bg: #0B1120;
+  --text: #F8FAFC;
+  --surface: #162033;
+  --border: #243244;
+  --primary: #4F8CFF;
+}
+
+[data-theme="forest-green"] {
+  --bg: #102016;
+  --text: #F8FAFC;
+  --surface: #1A3123;
+  --border: #2D4A39;
+  --primary: #22C55E;
+}
+
+[data-theme="fixdit-orange"] {
+  --bg: #FFF7F2;
+  --text: #2B2B2B;
+  --surface: #FFFFFF;
+  --border: #FFD5B5;
+  --primary: #FF6B00;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --bg: #111827;
+    --text: #F9FAFB;
+    --surface: #1F2937;
+    --border: #374151;
+    --primary: #FF6B00;
+  }
 }

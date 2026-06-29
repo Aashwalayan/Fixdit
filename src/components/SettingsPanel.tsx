@@ -30,7 +30,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ token, user, onUse
 
   useEffect(() => {
     localStorage.setItem('fixdit_theme', theme);
-    document.documentElement.dataset.fixditTheme = theme.toLowerCase().replace(/\s+/g, '-');
+    document.documentElement.dataset.theme = theme.toLowerCase().replace(/\s+/g, '-');
   }, [theme]);
 
   const saveSettings = async (event: React.FormEvent) => {
