@@ -18,7 +18,7 @@ const generateVerificationOTP = () => {
  */
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: 'gmail',
     port: 465,
     secure: true,
     family: 4,
