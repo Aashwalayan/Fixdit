@@ -102,7 +102,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
               </p>
             </div>
 
-            <div className="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-3">
+            <div className="p-4 bg-slate-50 border border-[color:var(--border)] rounded-xl space-y-3">
               <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-orange-500" />
                 Next Steps

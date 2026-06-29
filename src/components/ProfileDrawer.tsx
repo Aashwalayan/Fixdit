@@ -112,7 +112,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900 z-40 cursor-pointer"
+            className="fixed inset-0 bg-[color:color-mix(in_srgb,var(--surface-strong)_85%,transparent)] z-40 cursor-pointer"
             id="drawer-backdrop"
           />
 
@@ -269,7 +269,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                 </button>
 
                 {showInspector && (
-                  <div className="p-4 bg-slate-950 text-slate-300 font-mono text-[10px] leading-relaxed space-y-4">
+                  <div className="p-4 bg-[var(--surface-strong)] text-slate-300 font-mono text-[10px] leading-relaxed space-y-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1">
@@ -283,14 +283,14 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                           {showToken ? 'Hide' : 'Reveal'}
                         </button>
                       </div>
-                      <div className="p-2.5 bg-slate-900/60 rounded-lg border border-slate-900 break-all text-[9px] text-slate-400 max-h-24 overflow-y-auto scrollbar-thin">
+                      <div className="p-2.5 bg-[color:color-mix(in_srgb,var(--surface-strong)_60%,transparent)] rounded-lg border border-[color:color-mix(in_srgb,var(--surface-strong)_90%,transparent)] break-all text-[9px] text-slate-400 max-h-24 overflow-y-auto scrollbar-thin">
                         {showToken ? token : `${token.substring(0, 16)}••••••••${token.substring(token.length - 16)}`}
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <span className="text-[9px] text-slate-500 font-bold block">DECODED PAYLOAD CLAIMS</span>
-                      <div className="p-3 bg-slate-900/40 rounded-lg border border-slate-900 text-[10px] text-slate-300 space-y-1">
+                      <div className="p-3 bg-[color:color-mix(in_srgb,var(--surface-strong)_40%,transparent)] rounded-lg border border-[color:color-mix(in_srgb,var(--surface-strong)_90%,transparent)] text-[10px] text-slate-300 space-y-1">
                         {decodedPayload ? (
                           <>
                             <p><span className="text-orange-400">"userId":</span> <span className="text-emerald-400">"{decodedPayload.userId || decodedPayload.id}"</span></p>
@@ -317,7 +317,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                   onLogout();
                   onClose();
                 }}
-                className="px-4 py-2 bg-slate-900 hover:bg-red-600 text-white hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                className="px-4 py-2 bg-[var(--surface-strong)] hover:bg-red-600 text-white hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sign Out Session

@@ -292,7 +292,7 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
             {selectedImage ? (
               <div className="relative w-full max-h-[160px] rounded-xl overflow-hidden flex justify-center items-center">
                 <img src={selectedImage} alt="Uploaded evidence" className="object-cover max-h-[160px] rounded-xl shadow-sm" />
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 hover:opacity-100 flex items-center justify-center transition">
+                <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--surface-strong)_40%,transparent)] opacity-0 hover:opacity-100 flex items-center justify-center transition">
                   <span className="bg-white/95 text-slate-800 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1">
                     <Upload className="w-3.5 h-3.5" /> Change Photo
                   </span>
@@ -328,7 +328,7 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
         )}
 
         {/* Gemini Analysis Live Notification Card / Manual classification */}
-        <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-2.5 animate-fadeIn" id="ai-analysis-card">
+        <div className="p-4 bg-slate-50 border border-[color:var(--border)] rounded-2xl space-y-2.5 animate-fadeIn" id="ai-analysis-card">
           <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
             <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
               <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" />
@@ -403,11 +403,11 @@ export const ReportIssueForm: React.FC<ReportIssueFormProps> = ({
                 </span>
               )}
             </div>
-            <div className="col-span-2 border-t border-slate-150 pt-2">
+            <div className="col-span-2 border-t border-[color:var(--border)] pt-2">
               <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">Assigned Department</span>
               <span className="font-semibold text-slate-700 block mt-0.5">{suggestedDepartment || 'Department of Public Works'}</span>
             </div>
-            <div className="col-span-2 border-t border-slate-150 pt-2">
+            <div className="col-span-2 border-t border-[color:var(--border)] pt-2">
               <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wider">Visual AI Audit Summary</span>
               <span className="text-[11px] text-slate-500 italic block mt-0.5 leading-relaxed bg-white p-2 border border-slate-100 rounded-lg">
                 "{aiSummary || 'No image uploaded yet. Automatic visual audit will run upon image upload.'}"

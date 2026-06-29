@@ -103,7 +103,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, currentUs
               </option>
             ))}
           </select>
-          <button onClick={transferAdmin} disabled={!selectedOfficialId || actionLoading} className="px-4 py-3 rounded-xl bg-slate-950 text-white font-bold text-sm disabled:bg-slate-300">
+          <button onClick={transferAdmin} disabled={!selectedOfficialId || actionLoading} className="px-4 py-3 rounded-xl bg-[var(--surface-strong)] text-white font-bold text-sm disabled:bg-slate-300">
             Transfer
           </button>
         </div>

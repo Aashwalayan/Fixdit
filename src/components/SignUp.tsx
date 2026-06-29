@@ -265,7 +265,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onRegisterSuccess, onNavigateToL
       <button
         onClick={onNavigateToLogin}
         disabled={loading}
-        className="w-full mt-6 py-2.5 border border-slate-200 hover:border-slate-350 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition"
+        className="w-full mt-6 py-2.5 border border-slate-200 hover:border-[color:var(--border)] bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Login

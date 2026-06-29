@@ -6,9 +6,35 @@
   --text: #1A1A1B;
 
   --surface: #ffffff;
+  --surface-strong: #111827;
   --border: #E2E8F0;
 
   --primary: #FF6B00;
+
+  /* Tailwind color token remap so existing utilities follow the active theme. */
+  --color-white: var(--surface);
+  --color-slate-50: var(--bg);
+  --color-slate-100: color-mix(in srgb, var(--surface) 92%, var(--text) 8%);
+  --color-slate-200: var(--border);
+  --color-slate-300: color-mix(in srgb, var(--border) 72%, var(--text) 28%);
+  --color-slate-400: color-mix(in srgb, var(--text) 42%, var(--bg) 58%);
+  --color-slate-500: color-mix(in srgb, var(--text) 62%, var(--bg) 38%);
+  --color-slate-600: color-mix(in srgb, var(--text) 78%, var(--bg) 22%);
+  --color-slate-700: color-mix(in srgb, var(--text) 88%, var(--bg) 12%);
+  --color-slate-800: color-mix(in srgb, var(--text) 95%, var(--bg) 5%);
+  --color-slate-900: var(--text);
+  --color-slate-950: var(--text);
+
+  --color-orange-50: color-mix(in srgb, var(--primary) 10%, var(--bg));
+  --color-orange-100: color-mix(in srgb, var(--primary) 18%, var(--bg));
+  --color-orange-200: color-mix(in srgb, var(--primary) 28%, var(--bg));
+  --color-orange-300: color-mix(in srgb, var(--primary) 42%, var(--bg));
+  --color-orange-400: color-mix(in srgb, var(--primary) 70%, var(--text));
+  --color-orange-500: var(--primary);
+  --color-orange-600: color-mix(in srgb, var(--primary) 85%, black);
+  --color-orange-700: color-mix(in srgb, var(--primary) 72%, black);
+  --color-orange-800: color-mix(in srgb, var(--primary) 60%, black);
+  --color-orange-900: color-mix(in srgb, var(--primary) 48%, black);
 }
 
 body {
@@ -26,17 +52,18 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #E2E8F0;
+  background: var(--border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #CBD5E1;
+  background: color-mix(in srgb, var(--border) 72%, var(--text) 28%);
 }
 
 [data-theme="dark"] {
   --bg: #111827;
   --text: #F9FAFB;
   --surface: #1F2937;
+  --surface-strong: #0B1120;
   --border: #374151;
   --primary: #FF6B00;
 }
@@ -45,6 +72,7 @@ body {
   --bg: #0B1120;
   --text: #F8FAFC;
   --surface: #162033;
+  --surface-strong: #06101F;
   --border: #243244;
   --primary: #4F8CFF;
 }
@@ -53,6 +81,7 @@ body {
   --bg: #102016;
   --text: #F8FAFC;
   --surface: #1A3123;
+  --surface-strong: #0A1810;
   --border: #2D4A39;
   --primary: #22C55E;
 }
@@ -61,6 +90,7 @@ body {
   --bg: #FFF7F2;
   --text: #2B2B2B;
   --surface: #FFFFFF;
+  --surface-strong: #1F2937;
   --border: #FFD5B5;
   --primary: #FF6B00;
 }
@@ -70,6 +100,7 @@ body {
     --bg: #111827;
     --text: #F9FAFB;
     --surface: #1F2937;
+    --surface-strong: #0B1120;
     --border: #374151;
     --primary: #FF6B00;
   }

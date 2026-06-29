@@ -100,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={onToggleCreateIssue}
               className={`px-3.5 py-2 rounded-xl text-xs font-black tracking-tight flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-orange-500/5 cursor-pointer ${
                 showCreateIssue
-                  ? 'bg-slate-950 text-white hover:bg-slate-800'
+                  ? 'bg-[var(--surface-strong)] text-white hover:bg-[color:color-mix(in_srgb,var(--surface-strong)_82%,black)]'
                   : 'bg-orange-600 hover:bg-orange-700 text-white'
               }`}
             >

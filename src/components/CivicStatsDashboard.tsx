@@ -60,7 +60,7 @@ export const CivicStatsDashboard: React.FC<CivicStatsDashboardProps> = ({ token 
         <p className="text-sm text-slate-500 mt-1">{error || 'Data is currently unavailable.'}</p>
         <button
           onClick={fetchStats}
-          className="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition"
+          className="mt-4 px-4 py-2 bg-[var(--surface-strong)] hover:bg-[color:color-mix(in_srgb,var(--surface-strong)_82%,black)] text-white font-bold rounded-xl text-xs transition"
         >
           Retry Load
         </button>
@@ -106,7 +106,7 @@ export const CivicStatsDashboard: React.FC<CivicStatsDashboardProps> = ({ token 
       {/* Grid Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
-        <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
+        <div className="bg-white border border-[color:var(--border)] rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
           <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50/50 rounded-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform" />
           <div className="w-9 h-9 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
@@ -121,7 +121,7 @@ export const CivicStatsDashboard: React.FC<CivicStatsDashboardProps> = ({ token 
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
+        <div className="bg-white border border-[color:var(--border)] rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/50 rounded-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform" />
           <div className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
             <CheckCircle className="w-5 h-5" />
@@ -137,7 +137,7 @@ export const CivicStatsDashboard: React.FC<CivicStatsDashboardProps> = ({ token 
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
+        <div className="bg-white border border-[color:var(--border)] rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/50 rounded-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform" />
           <div className="w-9 h-9 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
             <Clock className="w-5 h-5" />
@@ -152,7 +152,7 @@ export const CivicStatsDashboard: React.FC<CivicStatsDashboardProps> = ({ token 
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
+        <div className="bg-white border border-[color:var(--border)] rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden group hover:shadow-md transition">
           <div className="absolute top-0 right-0 w-24 h-24 bg-red-50/50 rounded-full translate-x-8 -translate-y-8 group-hover:scale-110 transition-transform" />
           <div className="w-9 h-9 bg-red-50 text-red-600 rounded-xl flex items-center justify-center">
             <AlertCircle className="w-5 h-5" />

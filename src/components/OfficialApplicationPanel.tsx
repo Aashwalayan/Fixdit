@@ -82,7 +82,7 @@ export const OfficialApplicationPanel: React.FC<OfficialApplicationPanelProps> =
           <h3 className="text-xl font-black text-slate-950 mt-1">Apply to become an official</h3>
           <p className="text-sm text-slate-500 mt-1">Submit your credentials and track review status in one place.</p>
         </div>
-        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-900 text-white">
+        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[var(--surface-strong)] text-white">
           {statusLabel}
         </span>
       </div>

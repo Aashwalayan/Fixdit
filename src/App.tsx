@@ -463,7 +463,7 @@ export default function App() {
                 />
               </div>
 
-              <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm space-y-3.5 relative overflow-hidden">
+              <div className="bg-white border border-[color:var(--border)] rounded-2xl p-5 shadow-sm space-y-3.5 relative overflow-hidden">
                 <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-slate-100 rounded text-[9px] text-slate-400 uppercase font-sans font-bold">
                   SF CO-OP
                 </div>

@@ -231,7 +231,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         <div className="space-y-2 flex-1">
           {/* Metadata badges */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[var(--surface-strong)] text-white">
               {issue.category}
             </span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${severityColors[issue.severity]}`}>
@@ -275,7 +275,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
           />
           {issue.aiSummary && (
-            <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur text-white text-[11px] leading-relaxed p-3 rounded-xl border border-slate-800 shadow-lg flex items-start gap-2 animate-fadeIn">
+            <div className="absolute bottom-3 left-3 right-3 bg-[color:color-mix(in_srgb,var(--surface-strong)_90%,transparent)] backdrop-blur text-white text-[11px] leading-relaxed p-3 rounded-xl border border-[color:color-mix(in_srgb,var(--surface-strong)_80%,transparent)] shadow-lg flex items-start gap-2 animate-fadeIn">
               <Sparkles className="w-4 h-4 text-orange-400 shrink-0 mt-0.5 animate-pulse" />
               <div>
                 <span className="font-bold text-orange-400 block uppercase tracking-wide text-[9px]">Gemini Vision AI Summary</span>
@@ -354,7 +354,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             onClick={handleSaveToggle}
             className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
               isSavedByMe
-                ? 'bg-slate-900 text-white border-slate-900'
+                ? 'bg-[var(--surface-strong)] text-white border-[color:var(--surface-strong)]'
                 : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border-slate-200'
             }`}
           >
@@ -390,7 +390,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
       {/* Interactive Status Form */}
       {showStatusUpdateForm && (
-        <form onSubmit={handleUpdateStatusSubmit} className="mx-4 sm:mx-5 mb-5 p-4 border border-slate-150 rounded-2xl bg-slate-50 space-y-4 animate-fadeIn">
+        <form onSubmit={handleUpdateStatusSubmit} className="mx-4 sm:mx-5 mb-5 p-4 border border-[color:var(--border)] rounded-2xl bg-slate-50 space-y-4 animate-fadeIn">
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
             <CheckSquare className="w-4 h-4 text-orange-500" />
             Submit Maintenance Update Form
@@ -450,7 +450,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             <button
               type="submit"
               disabled={updatingStatus}
-              className="px-4 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-bold flex items-center gap-1"
+              className="px-4 py-1.5 bg-[var(--surface-strong)] text-white rounded-lg hover:bg-[color:color-mix(in_srgb,var(--surface-strong)_82%,black)] font-bold flex items-center gap-1"
             >
               {updatingStatus ? <RefreshCw className="w-3 animate-spin" /> : null}
               Submit Progress Update
@@ -479,7 +479,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           ) : (
             <div className="space-y-3.5 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin">
               {comments.map((comment) => (
-                <div key={comment.id} className="bg-white p-3 rounded-xl border border-slate-150 shadow-xs text-xs space-y-1">
+                <div key={comment.id} className="bg-white p-3 rounded-xl border border-[color:var(--border)] shadow-xs text-xs space-y-1">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="font-extrabold text-slate-700 flex items-center gap-1">
                       <User className="w-3 h-3 text-slate-400" />
@@ -504,7 +504,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
               placeholder="Add your public verification comment or support detail..."
-              className="flex-1 text-xs font-semibold text-slate-700 bg-white focus:bg-white border border-slate-250 focus:border-orange-400 px-3 py-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-400/20 transition"
+              className="flex-1 text-xs font-semibold text-slate-700 bg-white focus:bg-white border border-[color:var(--border)] focus:border-orange-400 px-3 py-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-400/20 transition"
               required
             />
             <button
