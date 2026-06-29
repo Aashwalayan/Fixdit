@@ -18,13 +18,7 @@ const generateVerificationOTP = () => {
  */
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: 'gmail',
-    port: 465,
-    secure: true,
-    family: 4,
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 15000,
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
