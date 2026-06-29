@@ -26,12 +26,13 @@ const generateVerificationOTP = () => {
  * @returns {Promise<string>} the OTP that was sent
  */
 const sendVerificationOTP = async (email, otp) => {
+  console.log(">>> sendVerificationOTP called");
 
   const code = otp || generateVerificationOTP();
   
   const resend = getResend();
 
-  await resend.emails.send({
+  const {data, error } = await resend.emails.send({
     from: "Fixdit <onboarding@resend.dev>",
     to: email,
     subject: 'Verify your Fixdit Account',
@@ -47,6 +48,13 @@ const sendVerificationOTP = async (email, otp) => {
       </div>
     `,
   });
+
+  console.log("Resend data:", data);
+  console.log("Resend error:", error);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return code;
 };
