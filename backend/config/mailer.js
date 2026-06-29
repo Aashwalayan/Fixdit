@@ -7,44 +7,45 @@ const generateVerificationOTP = () => {
 };
 
 /**
- * Build the SMTP transporter.
+ * Build the SMTP transporter on each call so env vars are read at
+ * runtime (not at module load time), which avoids issues on Render
+ * where env vars may not be set during the build phase.
  *
- * On Render (and many cloud providers) outbound port 587 (STARTTLS) is often
- * blocked or unreachable via IPv6, which causes ENETUNREACH. Using port 465
- * with secure:true (implicit TLS) over an explicit IPv4 socket is the most
- * reliable option for Gmail on Render.
+ * Port 465 + secure:true (implicit TLS) is the most reliable Gmail
+ * path from cloud providers like Render. Port 587 STARTTLS is often
+ * blocked or causes ENETUNREACH on IPv6 paths.
+ * family:4 forces IPv4 and prevents ENETUNREACH on dual-stack hosts.
  */
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,          // implicit TLS — no STARTTLS negotiation needed
-    family: 4,             // force IPv4, avoids ENETUNREACH on Render's dual-stack
+    secure: true,
+    family: 4,
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 15000,
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // must be a Gmail App Password, not account password
+      pass: process.env.EMAIL_PASS,
     },
   });
 };
 
 /**
  * Send a verification OTP email.
+ * Throws a descriptive Error on failure — callers must handle it and
+ * surface a real error to the user rather than silently continuing.
  *
- * Returns a promise that resolves to the OTP string on success.
- * Rejects with a descriptive Error on failure so the caller can surface
- * a real error to the user instead of silently continuing.
- *
- * @param {string} email  - recipient address
- * @param {string} [otp]  - optional pre-generated OTP (generated internally if omitted)
+ * @param {string} email - recipient address
+ * @param {string} [otp] - pre-generated OTP (generated internally if omitted)
  * @returns {Promise<string>} the OTP that was sent
  */
 const sendVerificationOTP = async (email, otp) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     throw new Error(
-      'Email service is not configured. Set EMAIL_USER and EMAIL_PASS environment variables on Render.'
+      'Email service is not configured. ' +
+      'Set EMAIL_USER and EMAIL_PASS environment variables on Render.'
     );
   }
 
