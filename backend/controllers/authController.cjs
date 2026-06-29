@@ -57,11 +57,30 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ error: 'Email is already registered.' });
     }
 
+    
+
+    // Send OTP email — awaited so failures surface as real errors.
+
+    const otp = generateVerificationOTP();
+
+    // We do NOT return verificationToken or the OTP to the client.
+    try {
+      await mailer.sendVerificationOTP(normalizedEmail, otp);
+    } catch (emailError) {
+      console.error('OTP email delivery failed:', emailError.message);
+      // User is created but verification email couldn't be sent.
+      // Return a 503 so the frontend can show a real, actionable message.
+      return res.status(503).json({
+        error: `We couldn't send the verification email. Please try again later. (${emailError.message})`,
+        emailFailed: true,
+      });
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const otp = generateVerificationOTP();
+    
 
     // Create and store user first, then attempt email.
     // If email fails we return a 503 so the user knows to retry — the user
@@ -76,26 +95,6 @@ const registerUser = async (req, res) => {
       verificationOTP: otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
-
-    // Send OTP email — awaited so failures surface as real errors.
-    // We do NOT return verificationToken or the OTP to the client.
-    try {
-      await mailer.sendVerificationOTP(normalizedEmail, otp);
-    } catch (emailError) {
-      console.error('OTP email delivery failed:', emailError.message);
-      // User is created but verification email couldn't be sent.
-      // Return a 503 so the frontend can show a real, actionable message.
-      return res.status(503).json({
-        error: 'Your account was created but we could not send the verification email. ' +
-               'Please use the "Resend OTP" option on the verification screen, or contact support. ' +
-               `(Reason: ${emailError.message})`,
-        emailFailed: true,
-        // Still send email so the user can navigate to the verification screen
-        // but do NOT include the OTP itself.
-        userCreated: true,
-        email: normalizedEmail,
-      });
-    }
 
     // Success: user created, OTP email sent. Do not include OTP or verificationToken.
     return res.status(201).json({
