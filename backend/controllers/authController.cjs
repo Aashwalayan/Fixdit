@@ -6,10 +6,6 @@ const User = require('../models/User.cjs');
 const mailer = require('../config/mailer.cjs');
 
 
-console.log("MAILER =", mailer);
-console.log("KEYS =", Object.keys(mailer));
-console.log("TYPE =", typeof mailer.sendVerificationOTP);
-
 // Helper to generate JWT token
 const generateToken = (userId) => {
   return jwt.sign(
@@ -72,9 +68,10 @@ const registerUser = async (req, res) => {
     try {
       await mailer.sendVerificationOTP(normalizedEmail, otp);
     } catch (emailError) {
-      console.error('OTP email delivery failed:', emailError.message);
-      // User is created but verification email couldn't be sent.
-      // Return a 503 so the frontend can show a real, actionable message.
+      console.error("===== FULL EMAIL ERROR =====");
+      console.error(emailError);
+      console.error("============================");
+
       return res.status(503).json({
         error: `We couldn't send the verification email. Please try again later. (${emailError.message})`,
         emailFailed: true,
