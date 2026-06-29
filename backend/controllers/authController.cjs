@@ -3,7 +3,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.cjs');
-const mailer = require('../config/mailer.js');
+const mailer = require('../config/mailer.cjs');
 
 
 console.log("MAILER =", mailer);
