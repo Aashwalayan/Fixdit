@@ -5,6 +5,11 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.cjs');
 const mailer = require('../config/mailer.js');
 
+
+console.log("MAILER =", mailer);
+console.log("KEYS =", Object.keys(mailer));
+console.log("TYPE =", typeof mailer.sendVerificationOTP);
+
 // Helper to generate JWT token
 const generateToken = (userId) => {
   return jwt.sign(
