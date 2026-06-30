@@ -1,6 +1,5 @@
 <div align="center">
 <img alt="GHBanner" src="public/favicon.png" />
-<img alt="GHBanner" src="public/favicon.png" />
 </div>
 
 <h1 align="center">Fixdit</h1>
