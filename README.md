@@ -1,5 +1,6 @@
 <div align="center">
 <img alt="GHBanner" src="public/favicon.png" />
+<img alt="GHBanner" src="public/favicon.png" />
 </div>
 
 <h1 align="center">Fixdit</h1>
@@ -49,7 +50,7 @@
 
 **Fixdit** is a community-driven civic issue reporting platform that lets citizens report local problems — potholes, broken streetlights, garbage accumulation, water leaks, and more — directly to the relevant municipal department. Instead of relying on manual triage, Fixdit uses **Google Gemini** to analyze a reported issue's image and description, automatically classifying its category, estimating its severity, and routing it to the correct department.
 
-The platform combines structured issue tracking with social, community-driven prioritization — citizens can upvote, downvote, and comment on reports, while officials and admins manage resolution through a dedicated dashboard. The result is a faster, more transparent, and more accountable civic reporting loop.
+The platform combines structured issue tracking with social, community-driven prioritization — citizens can upvote, downvote, and comment on reports, while officials and admins manage resolution through a dedicated dashboard. Fixdit is deployed on **Google Cloud Run** for scalable, reliable hosting. The result is a faster, more transparent, and more accountable civic reporting loop.
 
 ---
 
@@ -255,7 +256,11 @@ Fixdit adapts to each user's civic activity and preferences.
 
 **Deployment**
 
-<img alt="Render" src="https://img.shields.io/badge/Render-46E3B7?logo=render&logoColor=white" />
+<img alt="Google Cloud Run" src="https://img.shields.io/badge/Google%20Cloud%20Run-4285F4?logo=googlecloud&logoColor=white" />
+
+**Cloud Deployment**
+
+Fixdit is containerized with **Docker**, built using **Google Cloud Build**, and stored in **Artifact Registry**. The container image is deployed on **Google Cloud Run**, served over **HTTPS**, and automatically scales with serverless infrastructure to handle traffic on demand.
 
 ---
 
@@ -331,9 +336,9 @@ Fixdit adapts to each user's civic activity and preferences.
 
 ## 13. Live Demo
 
-🚀 **Try Fixdit live:** [https://fixdit.onrender.com](https://fixdit.onrender.com)
+🚀 **Try Fixdit live:** [https://fixdit-315926063982.asia-south1.run.app/](https://fixdit-315926063982.asia-south1.run.app/)
 
-📦 **Repository:** [github.com/your-username/fixdit](https://github.com/your-username/fixdit)
+📦 **Repository:** [github.com/Aashwalayan/fixdit](https://github.com/your-username/fixdit)
 
 ---
 
