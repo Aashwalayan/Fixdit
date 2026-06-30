@@ -423,23 +423,6 @@ export default function App() {
 
             <div className="lg:col-span-7 space-y-6">
 
-              {drawerFilter === 'my-reports' && (
-                <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-between animate-fadeIn">
-                  <div className="flex items-center gap-2 text-xs font-bold text-orange-800">
-                    <Info className="w-4 h-4 text-orange-500" />
-                    <span>
-                      Viewing Filtered Vault: <strong className="capitalize">{drawerFilter.replace('-', ' ')}</strong> ({finalIssuesList.length} cases)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setDrawerFilter('home')}
-                    className="text-[10px] font-black text-orange-600 hover:underline uppercase"
-                  >
-                    Clear Filter
-                  </button>
-                </div>
-                )}
-
               {drawerFilter === 'official-application' && (
                 <OfficialApplicationPanel token={token} user={user} />
               )}

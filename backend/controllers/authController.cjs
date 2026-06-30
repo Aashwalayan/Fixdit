@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.cjs');
 const mailer = require('../config/mailer.cjs');
+const Notification = require('../models/Notification.cjs');
 
 
 // Helper to generate JWT token
@@ -98,6 +99,14 @@ const registerUser = async (req, res) => {
       profilePicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(normalizedUsername)}`,
       verificationOTP: otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    await Notification.create({
+      recipient: user._id,
+      title: "🎉 Welcome to Fixdit!",
+      message:
+        "Thanks for joining Fixdit! Report your first civic issue, support reports with votes, and track updates from local officials.",
+      type: "welcome", // if your schema has a type field
     });
 
     // Success: user created, OTP email sent. Do not include OTP or verificationToken.

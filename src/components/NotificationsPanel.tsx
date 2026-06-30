@@ -7,7 +7,7 @@ interface NotificationsPanelProps {
   fetchNotifications: () => Promise<void>;
 }
 
-export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token, notifications, setNotifications, fetchNotifications, }) => {
+export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token, notifications, fetchNotifications, }) => {
   
   const [loading, setLoading] = useState(true);
 
