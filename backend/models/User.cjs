@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    upvotedReports: {
+      type: [String],
+      default: [],
+    },
     anonymousReportingDefault: {
       type: Boolean,
       default: false,
@@ -268,6 +272,7 @@ const User = {
       role: safeRole,
       profilePicture: data.profilePicture || '',
       savedReports: Array.isArray(data.savedReports) ? data.savedReports : [],
+      upvotedReports: Array.isArray(data.upvotedReports) ? data.upvotedReports : [],
       anonymousReportingDefault: data.anonymousReportingDefault || false,
       showProfilePublicly: data.showProfilePublicly !== undefined ? data.showProfilePublicly : true,
       showActivity: data.showActivity !== undefined ? data.showActivity : true,

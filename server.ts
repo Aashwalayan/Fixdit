@@ -82,6 +82,7 @@ function mapPostToIssue(post: any): IssuePost {
   const coordinates = post.location?.coordinates?.coordinates || [0, 0];
   const commentsCount = Array.isArray(post.comments) ? post.comments.length : post.stats?.comments || 0;
   const upvotes = Number(post.upvotes ?? post.stats?.upvotes ?? 0);
+  const downvotes = Number(post.downvotes ?? post.stats?.downvotes ?? 0);
   const severity = (post.severity || "medium").toLowerCase() as SeverityType;
 
   return {
@@ -99,6 +100,8 @@ function mapPostToIssue(post: any): IssuePost {
     creator: post.author?.username || post.authorName || "anonymous_citizen",
     upvotes,
     upvoters: Array.isArray(post.upvoters) ? post.upvoters : [],
+    downvotes,
+    downvoters: Array.isArray(post.downvoters) ? post.downvoters : [],
     commentsCount,
     createdAt: new Date(post.createdAt || Date.now()).toISOString(),
     priorityScore: calculatePriority(severity, upvotes, commentsCount),
@@ -461,10 +464,12 @@ app.post("/api/issues", protect, async (req: any, res) => {
       aiSummary: aiSummary || "",
       assignedDepartment: suggestedDepartment || getDepartmentForCategory(category),
       author: req.user._id,
-      upvotes: 0,
-      upvoters: [],
-      comments: [],
-    });
+    upvotes: 0,
+    upvoters: [],
+    downvotes: 0,
+    downvoters: [],
+    comments: [],
+  });
 
     const hydratedPost = await Post.findById(createdPost._id);
     const admins = await User.find({ role: 'admin' });
@@ -482,7 +487,7 @@ app.post("/api/issues", protect, async (req: any, res) => {
   }
 });
 
-// 4. Vote for an issue (Reddit style toggle upvote)
+// 4. Vote for an issue (Reddit style toggle upvote/downvote)
 app.post("/api/issues/:id/vote", protect, async (req: any, res) => {
   try {
     const post = await Post.findById(req.params.id);
@@ -490,27 +495,69 @@ app.post("/api/issues/:id/vote", protect, async (req: any, res) => {
       return res.status(404).json({ error: "Issue not found" });
     }
 
-    const username = req.user?.username || req.body.userId || "tester_user";
-    const upvoters = Array.isArray(post.upvoters) ? [...post.upvoters] : [];
-    const votedIndex = upvoters.indexOf(username);
+    const voteType = req.body?.voteType === "downvote" ? "downvote" : "upvote";
+    const voteKey = String(req.user?._id || req.user?.username || req.body.userId || "tester_user");
+    const legacyVoteKey = String(req.user?.username || req.body.userId || "tester_user");
 
-    if (votedIndex > -1) {
-      upvoters.splice(votedIndex, 1);
+    const upvoters = Array.isArray(post.upvoters) ? [...post.upvoters] : [];
+    const downvoters = Array.isArray(post.downvoters) ? [...post.downvoters] : [];
+    const upvotedIndex = upvoters.findIndex((entry: string) => entry === voteKey || entry === legacyVoteKey);
+    const downvotedIndex = downvoters.findIndex((entry: string) => entry === voteKey || entry === legacyVoteKey);
+
+    if (voteType === "upvote") {
+      if (upvotedIndex > -1) {
+        upvoters.splice(upvotedIndex, 1);
+      } else {
+        upvoters.push(voteKey);
+        if (downvotedIndex > -1) {
+          downvoters.splice(downvotedIndex, 1);
+        }
+      }
     } else {
-      upvoters.push(username);
+      if (downvotedIndex > -1) {
+        downvoters.splice(downvotedIndex, 1);
+      } else {
+        downvoters.push(voteKey);
+        if (upvotedIndex > -1) {
+          upvoters.splice(upvotedIndex, 1);
+        }
+      }
+    }
+
+    const nextUpvotes = upvoters.length;
+    const nextDownvotes = downvoters.length;
+
+    const nextUserUpvotedReports = Array.isArray(req.user?.upvotedReports) ? [...req.user.upvotedReports.map(String)] : [];
+    const userPostId = String(post._id);
+    const savedVoteIndex = nextUserUpvotedReports.indexOf(userPostId);
+    if (voteType === "upvote" && upvotedIndex === -1) {
+      if (savedVoteIndex === -1) nextUserUpvotedReports.push(userPostId);
+    } else if (voteType === "upvote" && upvotedIndex > -1) {
+      if (savedVoteIndex > -1) nextUserUpvotedReports.splice(savedVoteIndex, 1);
+    } else if (voteType === "downvote") {
+      if (savedVoteIndex > -1) nextUserUpvotedReports.splice(savedVoteIndex, 1);
     }
 
     const updatedPost = await Post.findByIdAndUpdate(
       req.params.id,
       {
         upvoters,
-        upvotes: upvoters.length,
+        downvoters,
+        upvotes: nextUpvotes,
+        downvotes: nextDownvotes,
         stats: {
           ...(post.stats || {}),
-          upvotes: upvoters.length,
+          upvotes: nextUpvotes,
+          downvotes: nextDownvotes,
           comments: Array.isArray(post.comments) ? post.comments.length : post.stats?.comments || 0,
         },
       },
+      { new: true }
+    );
+
+    await User.findByIdAndUpdate(
+      req.user._id,
+      { upvotedReports: nextUserUpvotedReports },
       { new: true }
     );
 
@@ -518,16 +565,21 @@ app.post("/api/issues/:id/vote", protect, async (req: any, res) => {
     if (String(post.author?._id || post.author || '') !== String(req.user._id)) {
       await Notification.create({
         recipient: post.author?._id || post.author,
-        type: 'report_status',
-        title: 'Report status updated',
-        message: `Your report "${post.title}" is now ${mappedIssue.status.replace('_', ' ')}.`,
+        type: 'report_vote',
+        title: voteType === "upvote" ? 'Report upvoted' : 'Report downvoted',
+        message: voteType === "upvote"
+          ? `Your report "${post.title}" received an upvote.`
+          : `Your report "${post.title}" received a downvote.`,
         metadata: { postId: String(post._id) },
       });
     }
     res.json({
       upvotes: mappedIssue.upvotes,
+      downvotes: mappedIssue.downvotes,
       upvoters: mappedIssue.upvoters,
+      downvoters: mappedIssue.downvoters,
       priorityScore: mappedIssue.priorityScore,
+      activeVote: voteType,
     });
   } catch (error: any) {
     console.error("Issue vote failed:", error);

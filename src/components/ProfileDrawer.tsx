@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, User, Mail, Shield, Calendar, LogOut, CheckCircle, ShieldAlert, 
-  Key, RefreshCw, Terminal, Eye, EyeOff, Home, FileText, Bookmark, 
-  Bell, Settings, ChevronRight, Sparkles 
+  RefreshCw, Home, FileText, Bell, Settings, ChevronRight, Sparkles, Activity 
 } from 'lucide-react';
 
 interface ProfileDrawerProps {
@@ -13,8 +12,8 @@ interface ProfileDrawerProps {
   user: any;
   onLogout: () => void;
   onUserUpdated?: (user: any) => void;
-  onNavigate: (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => void;
-  activeView: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard';
+  onNavigate: (view: 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => void;
+  activeView: 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard';
 }
 
 export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
@@ -30,8 +29,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
   const [profile, setProfile] = useState<any>(user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showToken, setShowToken] = useState(false);
-  const [showInspector, setShowInspector] = useState(false);
 
   // Notifications mock count
   const mockNotifications = [
@@ -74,24 +71,10 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
     fetchProfile();
   }, [token, isOpen]);
 
-  // Decode JWT client-side for visualization
-  const getDecodedPayload = () => {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      const decoded = atob(parts[1]);
-      return JSON.parse(decoded);
-    } catch (e) {
-      return null;
-    }
-  };
-
-  const decodedPayload = getDecodedPayload();
-
   const navItems = [
     { id: 'home', label: 'Home Feed', icon: Home },
     { id: 'my-reports', label: 'My Reports', icon: FileText },
-    { id: 'saved-reports', label: 'Saved Reports', icon: Bookmark },
+    { id: 'your-activity', label: 'Your Activity', icon: Activity },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: mockNotifications.length },
     { id: 'settings', label: 'Settings', icon: Settings },
     ...(String(profile?.role || user?.role || '').toLowerCase() === 'user'
@@ -225,7 +208,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                       <button
                         key={item.id}
                         onClick={() => {
-                          onNavigate(item.id as 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard');
+                          onNavigate(item.id as 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard');
                           onClose();
                         }}
                         className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer ${
@@ -250,60 +233,6 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                     );
                   })}
                 </div>
-              </div>
-
-              {/* Collapsible Advanced JWT Inspector */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowInspector(!showInspector)}
-                  className="w-full flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-200 transition text-left cursor-pointer"
-                >
-                  <span className="text-xs font-mono font-bold text-slate-700 flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-orange-500" />
-                    Advanced JWT Inspector
-                  </span>
-                  <span className="text-[10px] text-orange-600 font-bold">
-                    {showInspector ? 'Hide' : 'Inspect'}
-                  </span>
-                </button>
-
-                {showInspector && (
-                  <div className="p-4 bg-[var(--surface-strong)] text-slate-300 font-mono text-[10px] leading-relaxed space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1">
-                          <Key className="w-3 h-3" /> BEARER TOKEN
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowToken(!showToken)}
-                          className="text-[9px] font-bold text-orange-500 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          {showToken ? 'Hide' : 'Reveal'}
-                        </button>
-                      </div>
-                      <div className="p-2.5 bg-[color:color-mix(in_srgb,var(--surface-strong)_60%,transparent)] rounded-lg border border-[color:color-mix(in_srgb,var(--surface-strong)_90%,transparent)] break-all text-[9px] text-slate-400 max-h-24 overflow-y-auto scrollbar-thin">
-                        {showToken ? token : `${token.substring(0, 16)}••••••••${token.substring(token.length - 16)}`}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <span className="text-[9px] text-slate-500 font-bold block">DECODED PAYLOAD CLAIMS</span>
-                      <div className="p-3 bg-[color:color-mix(in_srgb,var(--surface-strong)_40%,transparent)] rounded-lg border border-[color:color-mix(in_srgb,var(--surface-strong)_90%,transparent)] text-[10px] text-slate-300 space-y-1">
-                        {decodedPayload ? (
-                          <>
-                            <p><span className="text-orange-400">"userId":</span> <span className="text-emerald-400">"{decodedPayload.userId || decodedPayload.id}"</span></p>
-                            <p><span className="text-orange-400">"iat":</span> <span className="text-blue-400">{decodedPayload.iat}</span> <span className="text-[8px] text-slate-500">({new Date(decodedPayload.iat * 1000).toLocaleTimeString()})</span></p>
-                            <p><span className="text-orange-400">"exp":</span> <span className="text-blue-400">{decodedPayload.exp}</span> <span className="text-[8px] text-slate-500">({new Date(decodedPayload.exp * 1000).toLocaleDateString()})</span></p>
-                          </>
-                        ) : (
-                          <p className="text-slate-500 italic">No valid JWT token detected.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

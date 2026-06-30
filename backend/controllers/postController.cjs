@@ -35,6 +35,7 @@ const createPost = async (req, res) => {
       isAnonymous,
       upvotes,
       downvotes,
+      downvoters,
       comments
     } = req.body;
 
@@ -77,6 +78,7 @@ const createPost = async (req, res) => {
       isAnonymous: !!isAnonymous,
       upvotes: Number(upvotes) || 0,
       downvotes: Number(downvotes) || 0,
+      downvoters: Array.isArray(downvoters) ? downvoters : [],
       comments: comments || []
     };
 
@@ -215,8 +217,8 @@ const updatePost = async (req, res) => {
 
     // Parse updates based on authorization
     const updates = {};
-    const allowedUserFields = ['title', 'description', 'category', 'isAnonymous', 'aiSummary', 'assignedDepartment', 'upvotes', 'downvotes', 'comments'];
-    const allowedStaffFields = ['status', 'severity', 'aiAnalysis', 'aiSummary', 'assignedDepartment', 'upvotes', 'downvotes', 'comments'];
+    const allowedUserFields = ['title', 'description', 'category', 'isAnonymous', 'aiSummary', 'assignedDepartment', 'upvotes', 'downvotes', 'downvoters', 'comments'];
+    const allowedStaffFields = ['status', 'severity', 'aiAnalysis', 'aiSummary', 'assignedDepartment', 'upvotes', 'downvotes', 'downvoters', 'comments'];
 
     // If author, let them update standard description, category, images
     if (isAuthor) {

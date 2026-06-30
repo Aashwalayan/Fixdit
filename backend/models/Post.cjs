@@ -119,6 +119,10 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    downvoters: {
+      type: [String],
+      default: []
+    },
     comments: {
       type: [commentSchema],
       default: []
@@ -256,6 +260,7 @@ const Post = {
       upvotes: data.upvotes || data.stats?.upvotes || 0,
       upvoters: data.upvoters || [],
       downvotes: data.downvotes || data.stats?.downvotes || 0,
+      downvoters: data.downvoters || [],
       comments: data.comments || [],
       isAnonymous: data.isAnonymous || false,
       viewCount: data.viewCount || 0,
@@ -311,6 +316,8 @@ const Post = {
       const location = updatedFields.location ? { ...existing.location, ...updatedFields.location } : existing.location;
       const aiAnalysis = updatedFields.aiAnalysis !== undefined ? updatedFields.aiAnalysis : existing.aiAnalysis;
       const comments = updatedFields.comments !== undefined ? updatedFields.comments : existing.comments;
+      const upvoters = updatedFields.upvoters !== undefined ? updatedFields.upvoters : existing.upvoters;
+      const downvoters = updatedFields.downvoters !== undefined ? updatedFields.downvoters : existing.downvoters;
 
       const updatedPost = {
         ...existing,
@@ -319,6 +326,8 @@ const Post = {
         location,
         aiAnalysis,
         comments,
+        upvoters,
+        downvoters,
         updatedAt: new Date()
       };
 

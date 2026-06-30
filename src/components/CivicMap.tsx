@@ -138,10 +138,15 @@ const userMarker = L.marker(userLocation, {
                 issue.status === 'resolved' 
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                   : issue.status === 'in_progress' 
-                    ? 'bg-blue-50 text-blue-800 border border-blue-200' 
-                    : 'bg-slate-100 text-slate-800 border border-slate-200'
+                  ? 'bg-blue-50 text-blue-800 border border-blue-200' 
+                  : 'bg-slate-100 text-slate-800 border border-slate-200'
               }">${issue.status}</span>
               <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-50 text-red-800 border border-red-200">${issue.severity}</span>
+            </div>
+            <div class="text-[10px] text-slate-500 font-semibold mt-1.5 flex items-center gap-2">
+              <span>▲ ${issue.upvotes}</span>
+              <span>▼ ${issue.downvotes || 0}</span>
+              <span>💬 ${issue.commentsCount}</span>
             </div>
           </div>
         `, { closeButton: false, offset: [0, -5] });

@@ -22,6 +22,8 @@ export interface IssuePost {
   creator: string;
   upvotes: number;
   upvoters: string[]; // List of user IDs/emails who upvoted
+  downvotes: number;
+  downvoters: string[];
   commentsCount: number;
   createdAt: string;
   priorityScore: number;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowUp, MessageSquare, MapPin, Calendar, User, ShieldCheck, 
+  ArrowUp, ArrowDown, MessageSquare, MapPin, Calendar, User, ShieldCheck, 
   Sparkles, Clock, ChevronDown, ChevronUp, CheckSquare, RefreshCw, 
   Send, Camera, Eye, Plus 
 } from 'lucide-react';
@@ -11,7 +11,7 @@ interface IssueCardProps {
   token: string;
   currentUser: any;
   onIssueUpdated: (updatedIssue: IssuePost) => void;
-  onSaveToggled?: (issueId: string, saved: boolean) => void;
+  onSaveToggled?: (issueId: string, saved: boolean, issue?: IssuePost) => void;
   onFocusOnMap?: (issue: IssuePost) => void;
   isFocused?: boolean;
 }
@@ -77,8 +77,17 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     }
   }, [showComments, issue.id]);
 
-  // Handle Upvote toggle
-  const handleVote = async () => {
+  const currentUserVoteKeys = [
+    String(currentUser?.id || ''),
+    String(currentUser?._id || ''),
+    String(currentUser?.username || ''),
+  ].filter(Boolean);
+
+  const userHasVote = (voteList: string[] | undefined) =>
+    currentUserVoteKeys.some((voteKey) => voteList?.includes(voteKey));
+
+  // Handle vote toggle
+  const handleVote = async (voteType: 'upvote' | 'downvote') => {
     if (voteLoading) return;
     setVoteLoading(true);
     try {
@@ -88,7 +97,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: currentUser.username })
+        body: JSON.stringify({ voteType })
       });
 
       if (response.ok) {
@@ -97,11 +106,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           ...issue,
           upvotes: voteResult.upvotes,
           upvoters: voteResult.upvoters,
+          downvotes: voteResult.downvotes,
+          downvoters: voteResult.downvoters,
           priorityScore: voteResult.priorityScore,
         });
       }
     } catch (err) {
-      console.error('Error upvoting issue:', err);
+      console.error('Error updating vote:', err);
     } finally {
       setVoteLoading(false);
     }
@@ -175,7 +186,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     }
   };
 
-  const isUpvotedByMe = issue.upvoters?.includes(currentUser.username) || false;
+  const isUpvotedByMe = userHasVote(issue.upvoters) || false;
+  const isDownvotedByMe = userHasVote(issue.downvoters) || false;
   const isCreatorMe = issue.creator === currentUser.username;
   const isCityEmployee = ['admin', 'official'].includes(currentUser.role);
   const isSavedByMe = Array.isArray(currentUser.savedReports) && currentUser.savedReports.map(String).includes(String(issue.id));
@@ -193,7 +205,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
       if (response.ok) {
         const data = await response.json();
-        onSaveToggled?.(issue.id, !!data.saved);
+        onSaveToggled?.(issue.id, !!data.saved, issue);
       }
     } catch (error) {
       console.error('Error toggling saved report:', error);
@@ -340,7 +352,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         <div className="flex items-center gap-2">
           {/* Reddit Upvote Button */}
           <button
-            onClick={handleVote}
+            onClick={() => handleVote('upvote')}
             className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
               isUpvotedByMe
                 ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/15'
@@ -349,6 +361,17 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           >
             <ArrowUp className={`w-4 h-4 ${isUpvotedByMe ? 'text-white' : 'text-slate-400'}`} />
             <span>Upvote {issue.upvotes}</span>
+          </button>
+          <button
+            onClick={() => handleVote('downvote')}
+            className={`px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
+              isDownvotedByMe
+                ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/15'
+                : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border-slate-200'
+            }`}
+          >
+            <ArrowDown className={`w-4 h-4 ${isDownvotedByMe ? 'text-white' : 'text-slate-400'}`} />
+            <span>Downvote {issue.downvotes}</span>
           </button>
           <button
             onClick={handleSaveToggle}

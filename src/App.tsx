@@ -17,7 +17,9 @@ import { NotificationsPanel } from './components/NotificationsPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { AdminDashboard } from './components/AdminDashboard';
 import { OfficialDashboard } from './components/OfficialDashboard';
+import { YourActivityPanel } from './components/YourActivityPanel';
 import { IssuePost } from './types';
+import { mapPostToIssue } from './utils/postTransforms';
 
 export default function App() {
   // Authentication session state
@@ -39,6 +41,9 @@ export default function App() {
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [focusedIssue, setFocusedIssue] = useState<IssuePost | null>(null);
   const [feedMode, setFeedMode] = useState<'active' | 'resolved'>('active');
+  const [myReports, setMyReports] = useState<IssuePost[]>([]);
+  const [myReportsLoading, setMyReportsLoading] = useState(false);
+  const [myReportsError, setMyReportsError] = useState<string | null>(null);
 
   // Feed filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +52,7 @@ export default function App() {
   const [sortBy, setSortBy] = useState('priority');
 
   // Drawer filter
-  const [drawerFilter, setDrawerFilter] = useState<'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application'>('home');
+  const [drawerFilter, setDrawerFilter] = useState<'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application'>('home');
 
   // Validate session on load or token change
   useEffect(() => {
@@ -116,6 +121,31 @@ export default function App() {
     fetchIssues();
   }, [categoryFilter, statusFilter, searchTerm, sortBy, token]);
 
+  useEffect(() => {
+    const fetchMyReports = async () => {
+      if (!token || drawerFilter !== 'my-reports') return;
+      setMyReportsLoading(true);
+      setMyReportsError(null);
+      try {
+        const response = await fetch('/api/users/me/reports', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setMyReports((data.posts || []).map(mapPostToIssue));
+        } else {
+          setMyReportsError(data.error || 'Could not load your reports.');
+        }
+      } catch (err) {
+        setMyReportsError('Could not load your reports.');
+      } finally {
+        setMyReportsLoading(false);
+      }
+    };
+
+    fetchMyReports();
+  }, [drawerFilter, token]);
+
   // Session teardown
   const handleLogout = () => {
     setToken(null);
@@ -129,6 +159,9 @@ export default function App() {
   const handleIssueUpdated = (updatedIssue: IssuePost) => {
     setIssues((prevIssues) =>
       prevIssues.map((issue) => (issue.id === updatedIssue.id ? updatedIssue : issue))
+    );
+    setMyReports((prevReports) =>
+      prevReports.map((issue) => (issue.id === updatedIssue.id ? updatedIssue : issue))
     );
     if (focusedIssue?.id === updatedIssue.id) {
       setFocusedIssue(updatedIssue);
@@ -154,7 +187,10 @@ export default function App() {
   const handleFocusOnMap = (issue: IssuePost) => setFocusedIssue(issue);
   const handleFocusFromMap = (issue: IssuePost) => setFocusedIssue(issue);
 
-  const handleDrawerNavigate = (view: 'home' | 'my-reports' | 'saved-reports' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => {
+  const handleDrawerNavigate = (view: 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => {
+    if (view !== 'home') {
+      setShowCreateIssue(false);
+    }
     if (view === 'admin-dashboard') {
       setActiveTab('admin-dashboard');
       setDrawerFilter('home');
@@ -175,12 +211,6 @@ export default function App() {
       result = result.filter((issue) => ['pending', 'accepted', 'in_progress'].includes(String(issue.status)));
     } else if (feedMode === 'resolved') {
       result = result.filter((issue) => ['resolved', 'verified'].includes(String(issue.status)));
-    }
-    if (drawerFilter === 'my-reports' && user) {
-      result = result.filter(issue => issue.creator === user.username);
-    } else if (drawerFilter === 'saved-reports' && user) {
-      const savedIds = Array.isArray(user.savedReports) ? user.savedReports.map(String) : [];
-      result = result.filter(issue => savedIds.includes(String(issue.id)));
     }
     return result;
   };
@@ -293,12 +323,77 @@ export default function App() {
           <OfficialDashboard user={user} issues={issues} />
         ) : activeTab === 'admin-dashboard' ? (
           <AdminDashboard token={token} currentUser={user} />
+        ) : drawerFilter === 'my-reports' ? (
+          <div className="space-y-6">
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">My Reports</p>
+                  <h3 className="text-2xl font-black text-slate-950 mt-1">Reports you filed</h3>
+                  <p className="text-sm text-slate-500 mt-1">A private history of every report submitted from your account.</p>
+                </div>
+                <button
+                  onClick={() => setDrawerFilter('home')}
+                  className="text-[10px] font-black text-orange-600 hover:underline uppercase self-start"
+                >
+                  Back to Feed
+                </button>
+              </div>
+            </div>
+
+            {myReportsError && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-sm font-semibold">
+                {myReportsError}
+              </div>
+            )}
+
+            {myReportsLoading ? (
+              <div className="p-12 text-center text-xs font-semibold text-slate-400 flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <RefreshCw className="w-6 h-6 animate-spin text-orange-500" />
+                <span>Loading your report history...</span>
+              </div>
+            ) : myReports.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                  -
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-700">No reports filed yet</p>
+                  <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                    Create your first report from the home feed to see it here.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {myReports.map((issue) => (
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    token={token}
+                    currentUser={user}
+                    onIssueUpdated={handleIssueUpdated}
+                    onSaveToggled={handleSaveToggled}
+                    onFocusOnMap={handleFocusOnMap}
+                    isFocused={focusedIssue?.id === issue.id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : drawerFilter === 'your-activity' ? (
+          <YourActivityPanel
+            token={token}
+            currentUser={user}
+            onIssueUpdated={handleIssueUpdated}
+            onSaveToggled={handleSaveToggled}
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             <div className="lg:col-span-7 space-y-6">
 
-              {drawerFilter !== 'home' && (
+              {drawerFilter === 'my-reports' && (
                 <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-between animate-fadeIn">
                   <div className="flex items-center gap-2 text-xs font-bold text-orange-800">
                     <Info className="w-4 h-4 text-orange-500" />
@@ -325,7 +420,7 @@ export default function App() {
                 <SettingsPanel token={token} user={user} onUserUpdated={setUser} />
               ) : (
                 <>
-                  {showCreateIssue && (
+                  {drawerFilter === 'home' && showCreateIssue && (
                     <ReportIssueForm
                       token={token}
                       username={user.username}
@@ -425,7 +520,7 @@ export default function App() {
                     ) : finalIssuesList.length === 0 ? (
                       <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
                         <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                          Ø
+                          -
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-700">No reported incidents found</p>
