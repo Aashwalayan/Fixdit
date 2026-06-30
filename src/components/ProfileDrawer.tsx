@@ -14,6 +14,7 @@ interface ProfileDrawerProps {
   onUserUpdated?: (user: any) => void;
   onNavigate: (view: 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard') => void;
   activeView: 'home' | 'my-reports' | 'your-activity' | 'notifications' | 'settings' | 'official-application' | 'admin-dashboard';
+  unreadCount: number;
 }
 
 export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
@@ -25,17 +26,14 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
   onUserUpdated,
   onNavigate,
   activeView,
+  unreadCount
+  
 }) => {
   const [profile, setProfile] = useState<any>(user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Notifications mock count
-  const mockNotifications = [
-    { id: 1, text: "Report #seed-1 updated to In Progress", time: "2h ago" },
-    { id: 2, text: "New comment on your report 'Pothole on Mission'", time: "4h ago" },
-    { id: 3, text: "Your report was upvoted by 5 citizens", time: "1d ago" },
-  ];
+  
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -75,7 +73,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
     { id: 'home', label: 'Home Feed', icon: Home },
     { id: 'my-reports', label: 'My Reports', icon: FileText },
     { id: 'your-activity', label: 'Your Activity', icon: Activity },
-    { id: 'notifications', label: 'Notifications', icon: Bell, badge: mockNotifications.length },
+    { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined, },
     { id: 'settings', label: 'Settings', icon: Settings },
     ...(String(profile?.role || user?.role || '').toLowerCase() === 'user'
       ? [{ id: 'official-application', label: 'Apply to Become Official', icon: ShieldAlert }]

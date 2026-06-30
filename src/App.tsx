@@ -45,6 +45,9 @@ export default function App() {
   const [myReportsLoading, setMyReportsLoading] = useState(false);
   const [myReportsError, setMyReportsError] = useState<string | null>(null);
 
+  //notification state
+  const [notifications, setNotifications] = useState<any[]>([]);
+
   // Feed filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -92,6 +95,8 @@ export default function App() {
     validateToken();
   }, [token]);
 
+  
+
   // Fetch issues from backend with filters
   const fetchIssues = async () => {
     if (!token) return;
@@ -117,9 +122,33 @@ export default function App() {
     }
   };
 
+  const fetchNotifications = async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch("/api/notifications", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
+
   useEffect(() => {
     fetchIssues();
   }, [categoryFilter, statusFilter, searchTerm, sortBy, token]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [token]);
 
   useEffect(() => {
     const fetchMyReports = async () => {
@@ -314,6 +343,7 @@ export default function App() {
         onUserUpdated={setUser}
         onNavigate={handleDrawerNavigate}
         activeView={drawerFilter}
+        unreadCount = {notifications.filter(n => !n.readAt).length}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8" id="app-workspace-container">
@@ -415,7 +445,11 @@ export default function App() {
               )}
 
               {drawerFilter === 'notifications' ? (
-                <NotificationsPanel token={token} />
+                <NotificationsPanel
+                  token={token}
+                  notifications={notifications}
+                  fetchNotifications={fetchNotifications}
+                />
               ) : drawerFilter === 'settings' ? (
                 <SettingsPanel token={token} user={user} onUserUpdated={setUser} />
               ) : (

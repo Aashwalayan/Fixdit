@@ -3,30 +3,21 @@ import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 
 interface NotificationsPanelProps {
   token: string;
+  notifications: any[];
+  fetchNotifications: () => Promise<void>;
 }
 
-export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token }) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token, notifications, setNotifications, fetchNotifications, }) => {
+  
   const [loading, setLoading] = useState(true);
 
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setNotifications(data.notifications || []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchNotifications();
-  }, [token]);
+  setLoading(true);
+
+  fetchNotifications().finally(() => {
+    setLoading(false);
+  });
+}, [token]);
 
   const markRead = async (id: string) => {
     await fetch(`/api/notifications/${id}/read`, {
