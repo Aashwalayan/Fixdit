@@ -109,6 +109,14 @@ const registerUser = async (req, res) => {
       type: "welcome", // if your schema has a type field
     });
 
+    await Notification.create({
+      recipient: user._id,
+      type: "getting_started",
+      title: "🚀 Getting Started",
+      message:
+        "Create your first report, support existing reports with votes, and follow updates from local officials as issues are resolved.",
+    });
+
     // Success: user created, OTP email sent. Do not include OTP or verificationToken.
     return res.status(201).json({
       message: 'Registration successful! A verification code has been sent to your email.',
